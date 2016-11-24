@@ -4,7 +4,7 @@ An implementation of Tetris in Assembly MIPS using infra red controller.
 # Memory positions used
   **Memory address: ($sp - offset)**
   
-* Number of players (size 4bytes int, offset 000)
+* Number of players
     * Type: int
     * Size: 4 bytes
     * Offset: 000 - 004
@@ -18,4 +18,3 @@ An implementation of Tetris in Assembly MIPS using infra red controller.
     * Type: int
     * Size: 16 bytes
     * Offset 068 - 084
-
