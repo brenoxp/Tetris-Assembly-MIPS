@@ -45,7 +45,11 @@ MAIN:
 	
 	jal PRINT_MENU
 	jal READ_MENU_OPTION_INPUT
-
+	
+	li $v0, 48
+	li $a0, 0x0000
+	syscall
+	
 	li $v0 10
 	syscall
 
@@ -56,8 +60,8 @@ PRINT_MENU:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
 
-	li $a0, 0x0000
 	li $v0, 48
+	li $a0, 0x0000
 	syscall
 	
 	li $v0, 104	
@@ -154,11 +158,17 @@ READ_MENU_OPTION_INPUT:
   	bne $t1, $v0, NOT_AN_S
   	jal PRESS_MENU_DOWN
 NOT_AN_S:
-
 	li $t1, 119
 	bne $t1, $v0, NOT_AN_W
   	jal PRESS_MENU_UP
 NOT_AN_W:
+	li $t1, 10
+	bne $t1, $v0, NOT_AN_ENTER
+  	
+  	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+NOT_AN_ENTER:
 
   	j PRESS_MENU_NOTHING
   	
@@ -235,6 +245,7 @@ PRESS_MENU_UP_OUT:
 	addi $sp, $sp, 4
 	jr $ra
 # Fim PRESS_MENU_UP_OUT
+
 	
 PRESS_MENU_NOTHING:
   	li $v0, 11       
