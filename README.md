@@ -1,6 +1,12 @@
 # Tetris Assembly MIPS
 An implementation of Tetris in Assembly MIPS using infra red controller.
 
+
+
+# Register used
+$s7 is used to save initial $sp position across all execution of the game, 
+this register should never be used with another purpose
+
 # Memory positions used
   **Memory address: ($sp - offset)**
   
