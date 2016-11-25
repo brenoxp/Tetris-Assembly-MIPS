@@ -13,6 +13,10 @@
 .eqv OFFSET_REGISTERED_KEYS   4	# 004 - 068
 .eqv OFFSET_OF_NEW_SP         68	
 
+######################
+##      IRDA 		##
+######################
+.eqv IRDA_READ_ADDRESS 0xFFFF0504
 
 .data
 	NUM:   .float  160.0
@@ -23,9 +27,14 @@
 	PLAYERS_3:     .asciiz "3 Jogadores\n"
 	PLAYERS_4:     .asciiz "4 Jogadores\n"
 	SELECT_OPTION: .asciiz "->\n"
+	CONFIG_P: 	   .asciiz "Config. das Keys do Jogador "
+	CONFIG_T0:	   .asciiz "Escolha a tecla <<"
+	CONFIG_T1:     .asciiz "Escolha a tecla >>"
+	CONFIG_T2:	   .asciiz "Escolha a tecla v"
+	CONFIG_T3:	   .asciiz "Escolha a tecla rotacao."
 	
 .text
-# ------  INÃCIO DA MAIN ------
+# ------  INÃ?CIO DA MAIN ------
 MAIN:
 	# Save $sp value into $s7
 	move $s7, $sp
@@ -43,12 +52,13 @@ MAIN:
 	li $t1, TAMX
 	li $t5, 0x00  # cor 0x00000000
 	
+	# Printa o menu e lê a opção escolhida
 	jal PRINT_MENU
 	jal READ_MENU_OPTION_INPUT
 	
-	li $v0, 48
-	li $a0, 0x0000
-	syscall
+	# Configura os controles escolhidos, se $s1 = 0 => TECLADO, $s1 = 1 => IRDA
+	move $s1, $zero
+	jal CONTROL_CONFIG
 	
 	li $v0 10
 	syscall
@@ -256,3 +266,140 @@ PRESS_MENU_NOTHING:
 #######################
 ##  End menu screen  ##
 #######################
+
+#######################
+##  Control Config   ##
+#######################
+# Pega o número de jogadores da memória e configura as teclas do IrDA para cada um e as coloca na memória.
+CONTROL_CONFIG: 
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	
+	# Load number of users
+	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t1, ($t0)
+	move $s0, $t1
+	
+	# Pointer to keys allocation in memory	
+	subi $t1, $s7, OFFSET_REGISTERED_KEYS
+	
+	# IrDA Read Address 
+	la $t2, IRDA_READ_ADDRESS
+	
+	# Number of players counter
+	addi $t3, $zero, 1
+	
+# Loop: while(players): get keys 
+LOOP_CONTROL:
+	
+	# Limpa a tela 
+	li $v0, 48
+	li $a0, 0x0000
+	syscall
+	
+	# PRINT CONFIG STRING + PLAYER NUMBER
+	li $v0, 104	
+	la $a0, CONFIG_P
+	li $a1, 10
+	li $a2, 30	
+	li $a3, 0x00FF	
+	syscall
+	
+	li $v0, 101
+	move $a0, $t3
+	li $a1, 300
+	li $a2, 30
+	li $a3, 0x00BB
+	syscall
+	
+	# GET KEY 0
+	li $v0, 104	
+	la $a0, CONFIG_T0 
+	li $a1, 120	
+	li $a2, PLAYERS_1_MENU_PY	
+	li $a3, 0x00FF	
+	syscall
+	jal GET_KEY 
+	subi $t1, $t1, -4
+	
+	# GET KEY 1	
+	li $v0, 104	
+	la $a0, CONFIG_T1
+	li $a1, 120	
+	li $a2, PLAYERS_2_MENU_PY	
+	li $a3, 0x00FF	
+	syscall
+	jal GET_KEY 
+	subi $t1, $t1, -4
+	
+	# GET KEY 2
+	li $v0, 104	
+	la $a0, CONFIG_T2
+	li $a1, 120
+	li $a2, PLAYERS_3_MENU_PY	
+	li $a3, 0x00FF	
+	syscall
+	jal GET_KEY 
+	subi $t1, $t1, -4
+	
+	# GET KEY 3	
+	li $v0, 104	
+	la $a0, CONFIG_T3
+	li $a1, 120
+	li $a2, PLAYERS_4_MENU_PY
+	li $a3, 0x00FF
+	syscall
+	jal GET_KEY 
+	subi $t1, $t1, -4
+	
+	beq $s0, $t3, END_IRDA
+	addi $t3, $t3, 1
+	j LOOP_CONTROL
+
+# Get key = 0 - Teclado
+# Get key = 1 - IrDA
+GET_KEY:
+	beq $s1, $t9, TECLADO_GET_KEY
+	addi $t9, $t9, 1
+	beq $s1, $t9, IRDA_GET_KEY
+	
+# Read character and saves ASCII code
+TECLADO_GET_KEY:
+	li $v0, 12
+	syscall
+	
+	# saves value
+	sw $v0, ($t1) 
+	jr $ra
+
+# Keeps IrDA on loop until it reads something from the receiver addres
+IRDA_GET_KEY:
+	# Keeps searching until IrDA different than zero
+	lw $t4, 0($t2) # $t2 = IRDA_READ_ADDRESS
+	bne $t4, $zero, IRDA_GET_KEY
+	
+	# IrDA different than zero, save value and return
+	sw $t4, 0($t1)
+	move $t4, $zero
+	jr $ra
+	
+END_IRDA:	 	 
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#######################
+## End Control Config##
+#######################
+
+
+
+
+
+
+
+
+
+
+
+
+
