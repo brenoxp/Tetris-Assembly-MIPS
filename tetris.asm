@@ -576,11 +576,22 @@ PRINT_ONE_BOARD_LOOP_2:
 # $a2 = color
 # $a3 = Player
 
-PRINT_SQUARE
+PRINT_SQUARE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
 
+	addi $a3, $a3, -1
+	mul $a3, $a3, 4
+	
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	subi $t0, $t0, $a3
+	
+	lw $t1, ($t0)
+	
 
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
 ########################
 ## end print Square   ##
 ########################
