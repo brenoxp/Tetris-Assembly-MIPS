@@ -9,9 +9,11 @@
 ######################
 ##  Memory offsets  ##
 ######################
-.eqv OFFSET_NUMBER_OF_PLAYERS 000	# 000 - 004
-.eqv OFFSET_REGISTERED_KEYS   4	# 004 - 068
-.eqv OFFSET_OF_NEW_SP         68	
+.eqv OFFSET_NUMBER_OF_PLAYERS 0   	# 000 - 004
+.eqv OFFSET_REGISTERED_KEYS   4	        # 004 - 068
+.eqv OFFSET_BOARD_POSITIONS   68 	# 068 - 084
+.eqv OFFSET_OF_NEW_SP         84	
+
 
 ######################
 ##      IRDA 		##
@@ -27,14 +29,14 @@
 	PLAYERS_3:     .asciiz "3 Jogadores\n"
 	PLAYERS_4:     .asciiz "4 Jogadores\n"
 	SELECT_OPTION: .asciiz "->\n"
-	CONFIG_P: 	   .asciiz "Config. das Keys do Jogador "
-	CONFIG_T0:	   .asciiz "Escolha a tecla <<"
+	CONFIG_P:      .asciiz "Config. das Keys do Jogador "
+	CONFIG_T0:     .asciiz "Escolha a tecla <<"
 	CONFIG_T1:     .asciiz "Escolha a tecla >>"
-	CONFIG_T2:	   .asciiz "Escolha a tecla v"
-	CONFIG_T3:	   .asciiz "Escolha a tecla rotacao."
+	CONFIG_T2:     .asciiz "Escolha a tecla v"
+	CONFIG_T3:     .asciiz "Escolha a tecla rotacao."
 	
 .text
-# ------  INÃ?CIO DA MAIN ------
+# ------  INï¿½?CIO DA MAIN ------
 MAIN:
 	# Save $sp value into $s7
 	move $s7, $sp
@@ -44,7 +46,7 @@ MAIN:
 
 	# Save number of users (Default 1)
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
-	li $t1, 1
+	li $t1, 4
 	sw $t1, ($t0)
 
 	# Inicializa a tela
@@ -52,13 +54,31 @@ MAIN:
 	li $t1, TAMX
 	li $t5, 0x00  # cor 0x00000000
 	
-	# Printa o menu e lê a opção escolhida
-	jal PRINT_MENU
-	jal READ_MENU_OPTION_INPUT
+	# Printa o menu e lï¿½ a opï¿½ï¿½o escolhida
+	#jal PRINT_MENU
+		
+	#jal READ_MENU_OPTION_INPUT
 	
 	# Configura os controles escolhidos, se $s1 = 0 => TECLADO, $s1 = 1 => IRDA
-	move $s1, $zero
-	jal CONTROL_CONFIG
+	#move $s1, $zero
+	#jal CONTROL_CONFIG
+	
+	
+	# Apagar (teste)
+	li $a0, 0x00
+	li $v0, 48
+	syscall
+	
+	jal PRINT_STATIC_BOARDS
+	
+	
+	# $a0 = X position
+	# $a1 = Y position
+	# $a2 = color
+	# $a3 = Player
+	
+	
+	#jal MAIN_LOOP
 	
 	li $v0 10
 	syscall
@@ -270,7 +290,7 @@ PRESS_MENU_NOTHING:
 #######################
 ##  Control Config   ##
 #######################
-# Pega o número de jogadores da memória e configura as teclas do IrDA para cada um e as coloca na memória.
+# Pega o nï¿½mero de jogadores da memï¿½ria e configura as teclas do IrDA para cada um e as coloca na memï¿½ria.
 CONTROL_CONFIG: 
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
@@ -392,14 +412,175 @@ END_IRDA:
 #######################
 
 
+#######################
+##    Print pixel    ##
+#######################
+# $a0 = X
+# $a1 = Y
+# $a2 = Color
+
+PLOT_PIXEL:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)	
+
+	li $v0, 45
+	syscall
+	
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#######################
+##  End Print pixel  ##
+#######################
+
+########################
+## Print static board ##
+########################
+# $a0 = Amount of players
+
+PRINT_STATIC_BOARDS:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+
+	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t1, ($t0)
+	
+	li $a2, 0xFF
+	
+	bne $t1, 1, IF_NOT_1_PLAYER
+	li $a0, 125
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+IF_NOT_1_PLAYER:
+	bne $t1, 2, IF_NOT_2_PLAYERS
+	li $a0, 65
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+	
+	li $a0, 200
+	subi $t0, $t0, 4
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+IF_NOT_2_PLAYERS:
+	bne $t1, 3, IF_NOT_3_PLAYERS
+	li $a0, 30
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+	
+	li $a0, 130
+	subi $t0, $t0, 4
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+	
+	li $a0, 230
+	subi $t0, $t0, 4
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+IF_NOT_3_PLAYERS:
+	bne $t1, 4, IF_NOT_4_PLAYERS
+	li $a0, 5
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+	
+	li $a0, 85
+	subi $t0, $t0, 4
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+	
+	li $a0, 165
+	subi $t0, $t0, 4
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+	
+	li $a0, 245
+	subi $t0, $t0, 4
+	move $t1, $a0
+	sw $t1, ($t0)
+	jal PRINT_ONE_BOARD
+IF_NOT_4_PLAYERS:	
+	
+
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+############################
+## End print static board ##
+############################
 
 
+########################
+## Print one board    ##
+########################
+# $a0 = X position
+# $a2 = color
+PRINT_ONE_BOARD:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+
+	li $a1, 50
+	#for 0 -> 140
+	li $t0, 0
+PRINT_ONE_BOARD_LOOP_1:
+	jal PLOT_PIXEL
+	
+	addi $a0, $a0, 70
+	jal PLOT_PIXEL
+	addi $a0, $a0, -70
+	
+	addi $a1, $a1, 1
+	addi $t0, $t0, 1
+	bne $t0, 140, PRINT_ONE_BOARD_LOOP_1
+	
+	#li $a1, 0
+	#for 0 -> 70
+	li $t0, 20
+PRINT_ONE_BOARD_LOOP_2:
+	
+	jal PLOT_PIXEL
+	addi $a1, $a1, -140
+	jal PLOT_PIXEL
+	addi $a1, $a1, 140
+	
+	addi $a0, $a0, 1
+	addi $t0, $t0, 1
+	bne $t0, 90, PRINT_ONE_BOARD_LOOP_2
 
 
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+
+##########################
+## End print one board  ##
+##########################
 
 
+########################
+## Print Square       ##
+########################
+# $a0 = X position
+# $a1 = Y position
+# $a2 = color
+# $a3 = Player
+
+PRINT_SQUARE
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
 
 
-
-
-
+########################
+## end print Square   ##
+########################
