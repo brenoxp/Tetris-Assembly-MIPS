@@ -46,7 +46,7 @@ MAIN:
 
 	# Save number of users (Default 1)
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
-	li $t1, 4
+	li $t1, 1
 	sw $t1, ($t0)
 
 	# Inicializa a tela
@@ -55,9 +55,9 @@ MAIN:
 	li $t5, 0x00  # cor 0x00000000
 	
 	# Printa o menu e l� a op��o escolhida
-	#jal PRINT_MENU
+	jal PRINT_MENU
 		
-	#jal READ_MENU_OPTION_INPUT
+	jal READ_MENU_OPTION_INPUT
 	
 	# Configura os controles escolhidos, se $s1 = 0 => TECLADO, $s1 = 1 => IRDA
 	#move $s1, $zero
@@ -76,7 +76,29 @@ MAIN:
 	# $a1 = Y position
 	# $a2 = color
 	# $a3 = Player
+	#li $a0, 0
+	#li $a1, 0
+	#li $a2 0xFF
+	#li $a3, 0
+	#jal PRINT_SQUARE
 	
+
+# INICIO LOOP	
+	li $s1, 0
+LOOP2:
+	li $s0, 0
+LOOP1:
+	move $a0, $s0
+	move $a1, $s1
+	li $a2, 0x33
+	li $a3, 0
+	jal PRINT_SQUARE
+	
+	add $s0, $s0, 1
+	bne $s0, 10, LOOP1
+	add $s1, $s1, 1
+	bne $s1, 20, LOOP2
+# FIM LOOP	
 	
 	#jal MAIN_LOOP
 	
@@ -448,67 +470,64 @@ PRINT_STATIC_BOARDS:
 	li $a2, 0xFF
 	
 	bne $t1, 1, IF_NOT_1_PLAYER
-	li $a0, 125
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
-	move $t1, $a0
-	sw $t1, ($t0)
+	li $a0, 125
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 IF_NOT_1_PLAYER:
 	bne $t1, 2, IF_NOT_2_PLAYERS
-	li $a0, 65
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
-	move $t1, $a0
-	sw $t1, ($t0)
+	li $a0, 65
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
-	li $a0, 200
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 4
-	move $t1, $a0
-	sw $t1, ($t0)
+	li $a0, 200
+	sw $a0, ($t0)
+	
 	jal PRINT_ONE_BOARD
 IF_NOT_2_PLAYERS:
 	bne $t1, 3, IF_NOT_3_PLAYERS
-	li $a0, 30
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
-	move $t1, $a0
-	sw $t1, ($t0)
+	li $a0, 30
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	subi $t0, $t0, 4
 	li $a0, 130
-	subi $t0, $t0, 4
-	move $t1, $a0
-	sw $t1, ($t0)
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	subi $t0, $t0, 8
 	li $a0, 230
-	subi $t0, $t0, 4
-	move $t1, $a0
-	sw $t1, ($t0)
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 IF_NOT_3_PLAYERS:
 	bne $t1, 4, IF_NOT_4_PLAYERS
-	li $a0, 5
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
-	move $t1, $a0
-	sw $t1, ($t0)
+	li $a0, 5
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	subi $t0, $t0, 4
 	li $a0, 85
-	subi $t0, $t0, 4
-	move $t1, $a0
-	sw $t1, ($t0)
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	subi $t0, $t0, 8
 	li $a0, 165
-	subi $t0, $t0, 4
-	move $t1, $a0
-	sw $t1, ($t0)
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	subi $t0, $t0, 12
 	li $a0, 245
-	subi $t0, $t0, 4
-	move $t1, $a0
-	sw $t1, ($t0)
+	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 IF_NOT_4_PLAYERS:	
 	
@@ -536,13 +555,13 @@ PRINT_ONE_BOARD:
 PRINT_ONE_BOARD_LOOP_1:
 	jal PLOT_PIXEL
 	
-	addi $a0, $a0, 70
+	addi $a0, $a0, 72
 	jal PLOT_PIXEL
-	addi $a0, $a0, -70
+	addi $a0, $a0, -72
 	
 	addi $a1, $a1, 1
 	addi $t0, $t0, 1
-	bne $t0, 140, PRINT_ONE_BOARD_LOOP_1
+	bne $t0, 142, PRINT_ONE_BOARD_LOOP_1
 	
 	#li $a1, 0
 	#for 0 -> 70
@@ -550,13 +569,13 @@ PRINT_ONE_BOARD_LOOP_1:
 PRINT_ONE_BOARD_LOOP_2:
 	
 	jal PLOT_PIXEL
-	addi $a1, $a1, -140
+	addi $a1, $a1, -142
 	jal PLOT_PIXEL
-	addi $a1, $a1, 140
+	addi $a1, $a1, 142
 	
 	addi $a0, $a0, 1
 	addi $t0, $t0, 1
-	bne $t0, 90, PRINT_ONE_BOARD_LOOP_2
+	bne $t0, 93, PRINT_ONE_BOARD_LOOP_2
 
 
 	lw   $ra, 0($sp)
@@ -574,21 +593,55 @@ PRINT_ONE_BOARD_LOOP_2:
 # $a0 = X position
 # $a1 = Y position
 # $a2 = color
-# $a3 = Player
+# $a3 = Player {0, 1, 2, 3}
 
 PRINT_SQUARE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
 
-	addi $a3, $a3, -1
 	mul $a3, $a3, 4
 	
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
-	subi $t0, $t0, $a3
-	
+	sub $t0, $t0, $a3
 	lw $t1, ($t0)
 	
-
+	
+	move $t2, $t1	# nesta linha $t2 tem o x indicando o incio do campo de jogo
+	# offset de x
+	mul $a0, $a0, 7
+	add $t2, $t2, $a0
+	addi $t2, $t2, 2	# Pula dois pixel para mostrar vazio entre dois quadrados
+	
+	addi $t4, $t2, 6	# end x
+	
+	
+	#li $t3, 50		#inicio de y
+	#addi $t5, $t3, 6	# end y
+	
+	li $t3, 50	# nesta linha $t3 tem o y indicando o incio do campo de jogo
+	# offset de y
+	mul $a1, $a1, 7
+	add $t3, $t3, $a1
+	addi $t3, $t3, 2	# Pula dois pixel para mostrar vazio entre dois quadrados
+	move $t6, $t3		#salva valor de $t3 em $t6
+	
+	addi $t5, $t3, 6	# end y
+	
+	
+PRINT_SQUARE_LOOP1:
+	move $t3, $t6
+PRINT_SQUARE_LOOP2:
+	
+	move $a0, $t2
+	move $a1, $t3
+	jal PLOT_PIXEL
+	
+	addi $t3, $t3, 1
+	
+	bne $t3, $t5, PRINT_SQUARE_LOOP2
+	addi $t2, $t2, 1
+	bne $t2, $t4, PRINT_SQUARE_LOOP1
+			
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
