@@ -12,7 +12,8 @@
 .eqv OFFSET_NUMBER_OF_PLAYERS 0   	# 000 - 004
 .eqv OFFSET_REGISTERED_KEYS   4	        # 004 - 068
 .eqv OFFSET_BOARD_POSITIONS   68 	# 068 - 084
-.eqv OFFSET_OF_NEW_SP         84	
+.eqv OFFSET_MATRICES	      84	# 084 - 4084
+.eqv OFFSET_OF_NEW_SP         4084	
 
 
 ######################
@@ -69,36 +70,12 @@ MAIN:
 	li $v0, 48
 	syscall
 	
+	jal INIT_MATRICES
+	
 	jal PRINT_STATIC_BOARDS
 	
-	
-	# $a0 = X position
-	# $a1 = Y position
-	# $a2 = color
-	# $a3 = Player
-	#li $a0, 0
-	#li $a1, 0
-	#li $a2 0xFF
-	#li $a3, 0
-	#jal PRINT_SQUARE
-	
-
-# INICIO LOOP	
-	li $s1, 0
-LOOP2:
-	li $s0, 0
-LOOP1:
-	move $a0, $s0
-	move $a1, $s1
-	li $a2, 0x33
 	li $a3, 0
-	jal PRINT_SQUARE
-	
-	add $s0, $s0, 1
-	bne $s0, 10, LOOP1
-	add $s1, $s1, 1
-	bne $s1, 20, LOOP2
-# FIM LOOP	
+	jal PRINT_BOARD
 	
 	#jal MAIN_LOOP
 	
@@ -508,25 +485,25 @@ IF_NOT_2_PLAYERS:
 IF_NOT_3_PLAYERS:
 	bne $t1, 4, IF_NOT_4_PLAYERS
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
-	li $a0, 5
+	li $a0, 4
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 4
-	li $a0, 85
+	li $a0, 84
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 8
-	li $a0, 165
+	li $a0, 164
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 	
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 12
-	li $a0, 245
+	li $a0, 244
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
 IF_NOT_4_PLAYERS:	
@@ -648,3 +625,120 @@ PRINT_SQUARE_LOOP2:
 ########################
 ## end print Square   ##
 ########################
+
+
+########################
+##    Init Matrices   ##
+########################
+INIT_MATRICES:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+
+	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t0, ($t0)
+	
+	subi $t1, $s7, OFFSET_MATRICES
+	
+	li $t4, 0
+#INIT_MATRICES_MAIN_LOOP:
+	
+	subi $t2, $t1, 4000
+	
+	
+INIT_MATRICES_LOOP1:
+	li $t3, 0x10
+	sw $t3, ($t1)
+	subi $t1, $t1, 4
+	bne $t1, $t2 INIT_MATRICES_LOOP1
+	
+	subi $t1, $s7, OFFSET_MATRICES
+	subi $t2, $t1, 160
+INIT_MATRICES_LOOP2:
+	li $t3, 0x03
+	sw $t3, ($t1)
+	subi $t1, $t1, 4
+	bgt  $t1, $t2 INIT_MATRICES_LOOP2
+	
+	subi $t1, $s7, OFFSET_MATRICES
+	subi $t1, $t1, 960
+	subi $t2, $t1, 40
+INIT_MATRICES_LOOP3:
+	li $t3, 0x03
+	sw $t3, ($t1)
+	subi $t1, $t1, 4
+	bgt  $t1, $t2 INIT_MATRICES_LOOP3
+
+	#addi $t4, $t4, 1
+	#bne  $t2, $t0, INIT_MATRICES_MAIN_LOOP
+
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+########################
+## end Init Matrices  ##
+########################
+
+########################
+##    Print Board     ##
+########################
+# $a3 player
+
+
+########################
+## Print Square       ##
+########################
+# $a0 = X position
+# $a1 = Y position
+# $a2 = color
+# $a3 = Player {0, 1, 2, 3}
+PRINT_BOARD:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, ($sp)
+	addi $sp, $sp, -4 
+	sw   $s1, ($sp)
+	addi $sp, $sp, -4 
+	sw   $s2, ($sp)
+	addi $sp, $sp, -4 
+	sw   $s3, ($sp)
+	addi $sp, $sp, -4 
+	sw   $s4, ($sp)
+	
+	subi $s3, $s7, OFFSET_MATRICES
+	#subi $s3, $s3, 160
+	lw $a2, ($s3)	# cor salva na memória
+	
+	li $s0, 0
+	li $s1, -4
+	move $s4, $a3
+
+PRINT_BOARD_LOOP1: 
+	li $s0, 0
+PRINT_BOARD_LOOP2:
+	move $a0, $s0
+	move $a1, $s1
+	move $a3, $s4
+	jal PRINT_SQUARE
+	
+	subi $s3, $s3, 4
+	lw $a2, ($s3)
+	
+	addi $s0, $s0, 1
+	bne $s0, 10, PRINT_BOARD_LOOP2
+	addi $s1, $s1, 1
+	bne $s1, 21 PRINT_BOARD_LOOP1
+
+	lw   $s4, ($sp)
+	addi $sp, $sp, 4
+	lw   $s3, ($sp)
+	addi $sp, $sp, 4
+	lw   $s2, ($sp)
+	addi $sp, $sp, 4
+	lw   $s1, ($sp)
+	addi $sp, $sp, 4
+	lw   $s0, ($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
