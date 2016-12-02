@@ -13,11 +13,12 @@
 .eqv OFFSET_REGISTERED_KEYS   4	        # 004 - 068
 .eqv OFFSET_BOARD_POSITIONS   68 	# 068 - 084
 .eqv OFFSET_MATRICES	      84	# 084 - 1084
-.eqv OFFSET_OF_NEW_SP         4084	
+.eqv OFFSET_SCORES	      	  5000      # 5000 - 5016
+.eqv OFFSET_OF_NEW_SP         5016
 
 
 ######################
-##      IRDA 		##
+##      IRDA 	    ##
 ######################
 .eqv IRDA_READ_ADDRESS 0xFFFF0504
 
@@ -35,6 +36,10 @@
 	CONFIG_T1:     .asciiz "Escolha a tecla >>"
 	CONFIG_T2:     .asciiz "Escolha a tecla v"
 	CONFIG_T3:     .asciiz "Escolha a tecla rotacao."
+	SCORE_P1:      .asciiz "SCORE P1: "
+	SCORE_P2:      .asciiz "SCORE P2: "
+	SCORE_P3:      .asciiz "SCORE P3: "
+	SCORE_P4:      .asciiz "SCORE P4: " 
 	
 .text
 # ------  IN�?CIO DA MAIN ------
@@ -82,6 +87,8 @@ LOOP_PRINT_BOARDS:
 	jal PRINT_BOARD
 	addi $s5, $s5, 1
 	bne $s5, $s6, LOOP_PRINT_BOARDS
+	
+	jal PRINT_SCORE
 	
 	li $v0 10
 	syscall
@@ -742,3 +749,173 @@ PRINT_BOARD_LOOP2:
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
+
+#######################
+## Print Score       ##
+#######################
+PRINT_SCORE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	
+	# Load number of users
+	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t1, ($t0)
+	addi $t0, $zero, 1
+	
+	# Print Score Strings
+	# P1
+	li $v0, 104	
+	la $a0, SCORE_P1
+	li $a1, 5	
+	li $a2, 200
+	li $a3, 0x00FF
+	syscall
+	# Zera Score P1
+	move $a0, $0
+	move $a1, $0
+	jal UPDATE_SCORE
+	# Checa se escolheu 1 jogador
+	beq $t0, $t1, FIM_PSCORE
+	addi $t0, $t0, 1
+	
+	# P2 
+	li $v0, 104	
+	la $a0, SCORE_P2
+	li $a1, 85
+	li $a2, 200	
+	li $a3, 0x00FF	
+	syscall
+	# Zera Score P2
+	addi $a0, $zero, 1
+	move $a1, $zero
+	jal UPDATE_SCORE
+	# Checa se escolheu 2 jogadores
+	beq $t0, $t1, FIM_PSCORE
+	addi $t0, $t0, 1
+	
+	# P3
+	li $v0, 104	
+	la $a0, SCORE_P3
+	li $a1, 165	
+	li $a2, 200	
+	li $a3, 0x00FF	
+	syscall
+	# Zera Score P3
+	addi $a0, $zero, 2
+	move $a1, $zero
+	jal UPDATE_SCORE
+	# Checa se escolheu 3 jogadores
+	beq $t0, $t1, FIM_PSCORE
+	addi $t0, $t0, 1
+	
+	# P4 
+	li $v0, 104	
+	la $a0, SCORE_P4
+	li $a1, 245
+	li $a2, 200
+	li $a3, 0x00FF
+	syscall
+	# Zera Score P4
+	addi $a0, $zero, 3
+	move $a1, $zero
+	jal UPDATE_SCORE
+	
+FIM_PSCORE:
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#######################
+## Fim Print Score   ##
+#######################
+
+########################
+## Update Score       ##
+########################
+# $a0 = Player {0, 1, 2, 3}
+# $a1 = Score to be added
+UPDATE_SCORE:
+	
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	
+	# Counter
+	move $t3, $zero
+	
+	# Address to OFFSET
+	subi $t4, $s7, OFFSET_SCORES
+	
+	# Pick the right player to update
+	beq $a0, $zero, P1_UPDATE
+	addi $t3, $t3, 1
+	beq $a0, $t3, P2_UPDATE
+	addi $t3, $t3, 1
+	beq $a0, $t3, P3_UPDATE
+	addi $t3, $t3, 1
+	beq $a0, $t3, P4_UPDATE
+	
+FIM_UPDATE:
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+
+P1_UPDATE: 
+	move $t2, $zero
+	lw $t2, 0($t4) 
+	add $t2, $t2, $a1 
+	
+	li $v0, 101
+	move $a0, $t2
+	li $a1, 10
+	li $a2, 210
+	li $a3, 0x00BB
+	syscall
+	
+	sw $t2, 0($t4)
+	j FIM_UPDATE
+	
+P2_UPDATE:
+	move $t2, $zero
+	lw $t2, 4($t4) 
+	add $t2, $t2, $a1 
+	
+	li $v0, 101
+	move $a0, $t2
+	li $a1, 85
+	li $a2, 210
+	li $a3, 0x00BB
+	syscall
+	
+	sw $t2, 4($t4)
+	j FIM_UPDATE
+	
+P3_UPDATE:
+	move $t2, $zero
+	move $t2, $zero
+	lw $t2, 8($t4) 
+	add $t2, $t2, $a1 
+	
+	li $v0, 101
+	move $a0, $t2
+	li $a1, 165
+	li $a2, 210
+	li $a3, 0x00BB
+	syscall
+	
+	sw $t2, 8($t4)
+	j FIM_UPDATE
+	
+P4_UPDATE:
+	move $t2, $zero
+	lw $t2, 12($t4) 
+	add $t2, $t2, $a1 
+
+	li $v0, 101
+	move $a0, $t2
+	li $a1, 245
+	li $a2, 210
+	li $a3, 0x00BB
+	syscall
+
+	sw $t2, 12($t4)
+	j FIM_UPDATE
+	
