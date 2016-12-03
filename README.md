@@ -24,3 +24,13 @@ this register should never be used with another purpose
     * Type: int
     * Size: 16 bytes
     * Offset 068 - 084
+
+* Board matrices
+	* Type: matrix
+	* Size: 1000 bytes X number of players
+	* Offset 084 - 1084 X number of players
+
+* Score
+	* Type: int
+	* Size: 16 bytes 
+	* Offset: 5000 - 5016
