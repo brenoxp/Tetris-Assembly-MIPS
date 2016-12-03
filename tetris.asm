@@ -13,8 +13,9 @@
 .eqv OFFSET_REGISTERED_KEYS   4	        # 004 - 068
 .eqv OFFSET_BOARD_POSITIONS   68 	# 068 - 084
 .eqv OFFSET_MATRICES	      84	# 084 - 1084
-.eqv OFFSET_SCORES	      	  5000      # 5000 - 5016
-.eqv OFFSET_OF_NEW_SP         5016
+.eqv OFFSET_SCORES	      5000      # 5000 - 5016
+.eqv OFFSET_USER_CLOCK	      5016      # 5016 - 5032
+.eqv OFFSET_OF_NEW_SP         5032
 
 
 ######################
@@ -69,27 +70,13 @@ MAIN:
 	#move $s1, $zero
 	#jal CONTROL_CONFIG
 	
-	
-	# Apagar (teste)
+	# Erase Screen
 	li $a0, 0x00
 	li $v0, 48
 	syscall
 	
-	jal INIT_MATRICES
-	
-	jal PRINT_STATIC_BOARDS
-	
-	li $s5, 0
-LOOP_PRINT_BOARDS:
-	subi $s6, $s7, OFFSET_NUMBER_OF_PLAYERS
-	lw $s6, ($s6)
-	move $a3, $s5
-	jal PRINT_BOARD
-	addi $s5, $s5, 1
-	bne $s5, $s6, LOOP_PRINT_BOARDS
-	
-	jal PRINT_SCORE
-	
+	jal INIT_MAIN_LOOP
+
 	li $v0 10
 	syscall
 
@@ -663,7 +650,7 @@ INIT_MATRICES_MAIN_LOOP:
 		
 	subi $t4, $t0, 160
 INIT_MATRICES_LOOP2:
-	li $t5, 0xA5
+	li $t5, 0x00
 	sw $t5, ($t0)
 	subi $t0, $t0, 1
 	bne $t0, $t4, INIT_MATRICES_LOOP2
@@ -671,14 +658,14 @@ INIT_MATRICES_LOOP2:
 	
 	subi $t4, $t0, 800
 INIT_MATRICES_LOOP1:
-	li $t5, 0xFF
+	li $t5, 0x00
 	sw $t5, ($t0)
 	subi $t0, $t0, 1
 	bne $t0, $t4, INIT_MATRICES_LOOP1
 	
 	subi $t4, $t0, 40
 INIT_MATRICES_LOOP3:
-	li $t5, 0xA0
+	li $t5, 0xFF
 	sw $t5, ($t0)
 	subi $t0, $t0, 1
 	bne $t0, $t4, INIT_MATRICES_LOOP3
@@ -693,6 +680,40 @@ INIT_MATRICES_LOOP3:
 ########################
 ## end Init Matrices  ##
 ########################
+
+
+########################
+##    Print Boards    ##
+########################
+PRINT_BOARDS:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s1, 0($sp)
+
+	li $s5, 0
+LOOP_PRINT_BOARDS:
+	subi $s0, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $s0, ($s0)
+	move $a3, $s1
+	jal PRINT_BOARD
+	addi $s1, $s1, 1
+	bne $s1, $s0, LOOP_PRINT_BOARDS
+	
+	lw   $s1, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+########################
+##  End Print Boards  ##
+########################
+
+
 
 ########################
 ##    Print Board     ##
@@ -750,172 +771,118 @@ PRINT_BOARD_LOOP2:
 	addi $sp, $sp, 4
 	jr $ra
 
-#######################
-## Print Score       ##
-#######################
-PRINT_SCORE:
+########################
+## Init Score         ##
+########################
+INIT_SCORE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
 	
-	# Load number of users
-	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
-	lw $t1, ($t0)
-	addi $t0, $zero, 1
+	li $t0, 0
+	subi $t1, $s7, OFFSET_SCORES
+	sw $t0, ($t1)
+	subi $t1, $t1, 4
+	sw $t0, ($t1)
+	subi $t1, $t1, 4
+	sw $t0, ($t1)
+	subi $t1, $t1, 4
+	sw $t0, ($t1)
 	
-	# Print Score Strings
-	# P1
-	li $v0, 104	
-	la $a0, SCORE_P1
-	li $a1, 5	
-	li $a2, 200
-	li $a3, 0x00FF
-	syscall
-	# Zera Score P1
-	move $a0, $0
-	move $a1, $0
-	jal UPDATE_SCORE
-	# Checa se escolheu 1 jogador
-	beq $t0, $t1, FIM_PSCORE
-	addi $t0, $t0, 1
-	
-	# P2 
-	li $v0, 104	
-	la $a0, SCORE_P2
-	li $a1, 85
-	li $a2, 200	
-	li $a3, 0x00FF	
-	syscall
-	# Zera Score P2
-	addi $a0, $zero, 1
-	move $a1, $zero
-	jal UPDATE_SCORE
-	# Checa se escolheu 2 jogadores
-	beq $t0, $t1, FIM_PSCORE
-	addi $t0, $t0, 1
-	
-	# P3
-	li $v0, 104	
-	la $a0, SCORE_P3
-	li $a1, 165	
-	li $a2, 200	
-	li $a3, 0x00FF	
-	syscall
-	# Zera Score P3
-	addi $a0, $zero, 2
-	move $a1, $zero
-	jal UPDATE_SCORE
-	# Checa se escolheu 3 jogadores
-	beq $t0, $t1, FIM_PSCORE
-	addi $t0, $t0, 1
-	
-	# P4 
-	li $v0, 104	
-	la $a0, SCORE_P4
-	li $a1, 245
-	li $a2, 200
-	li $a3, 0x00FF
-	syscall
-	# Zera Score P4
-	addi $a0, $zero, 3
-	move $a1, $zero
-	jal UPDATE_SCORE
-	
-FIM_PSCORE:
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
-#######################
-## Fim Print Score   ##
-#######################
+########################
+## End Init Score     ##
+########################
+
 
 ########################
 ## Update Score       ##
 ########################
 # $a0 = Player {0, 1, 2, 3}
 # $a1 = Score to be added
-UPDATE_SCORE:
-	
+PRINT_SCORE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
 	
-	# Counter
-	move $t3, $zero
+	move $t2, $a1
 	
-	# Address to OFFSET
-	subi $t4, $s7, OFFSET_SCORES
+	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	
-	# Pick the right player to update
-	beq $a0, $zero, P1_UPDATE
-	addi $t3, $t3, 1
-	beq $a0, $t3, P2_UPDATE
-	addi $t3, $t3, 1
-	beq $a0, $t3, P3_UPDATE
-	addi $t3, $t3, 1
-	beq $a0, $t3, P4_UPDATE
+	mul $t1, $a0, 4
+	sub $t0, $t0, $t1
+	lw $a1, ($t0)		# $a1 = X Position to print
+	addi $a1, $a1, 8
 	
-FIM_UPDATE:
+	subi $t0, $s7, OFFSET_SCORES
+	sub $t0, $t0, $t1
+	lw $a0, ($t0)		# $a0 = Value to print
+	
+	add $a0, $a0, $t2
+	sw $a0, ($t0)
+	
+	li $v0, 101
+	li $a2, 200
+	li $a3, 0xFF
+	syscall
+	
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
+########################
+##  End update Score  ##
+########################
 
-P1_UPDATE: 
-	move $t2, $zero
-	lw $t2, 0($t4) 
-	add $t2, $t2, $a1 
 	
-	li $v0, 101
-	move $a0, $t2
-	li $a1, 10
-	li $a2, 210
-	li $a3, 0x00BB
-	syscall
+########################
+##    Main Loop       ##
+########################
+INIT_MAIN_LOOP:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)	# $s0 = clock
+	addi $sp, $sp, -4 
+	sw   $s1, 0($sp)	# $s1 = down clock time
+	addi $sp, $sp, -4 
+	sw   $s2, 0($sp)	# $s2 = Count down clocks
 	
-	sw $t2, 0($t4)
-	j FIM_UPDATE
+	jal INIT_MATRICES
 	
-P2_UPDATE:
-	move $t2, $zero
-	lw $t2, 4($t4) 
-	add $t2, $t2, $a1 
+	jal PRINT_STATIC_BOARDS
 	
-	li $v0, 101
-	move $a0, $t2
-	li $a1, 85
-	li $a2, 210
-	li $a3, 0x00BB
-	syscall
+	jal PRINT_BOARDS
 	
-	sw $t2, 4($t4)
-	j FIM_UPDATE
+	jal INIT_SCORE
 	
-P3_UPDATE:
-	move $t2, $zero
-	move $t2, $zero
-	lw $t2, 8($t4) 
-	add $t2, $t2, $a1 
+	li $s0, 0
+	li $s1, 500000
+	li $s2, 0
+	li $s6, 0		# $s6 = current player in loop {0, 1, 2, 3}, NEVER USER WITH ANOTHER PURPOSE
 	
-	li $v0, 101
-	move $a0, $t2
-	li $a1, 165
-	li $a2, 210
-	li $a3, 0x00BB
-	syscall
+MAIN_LOOP:
 	
-	sw $t2, 8($t4)
-	j FIM_UPDATE
 	
-P4_UPDATE:
-	move $t2, $zero
-	lw $t2, 12($t4) 
-	add $t2, $t2, $a1 
+	
+	
+	addi $s0, $s0, 1
+	bne $s0, $s1, MAIN_LOOP
+	
+	
 
-	li $v0, 101
-	move $a0, $t2
-	li $a1, 245
-	li $a2, 210
-	li $a3, 0x00BB
-	syscall
 
-	sw $t2, 12($t4)
-	j FIM_UPDATE
+EXIT_MAIN_LOOP:
+	lw   $s2, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s1, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+########################
+##    End Main Loop   ##
+########################
 	
+
