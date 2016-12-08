@@ -801,7 +801,7 @@ INIT_SCORE:
 ########################
 # $a0 = Player {0, 1, 2, 3}
 # $a1 = Score to be added
-PRINT_SCORE:
+UPDATE_SCORE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
 	
@@ -841,11 +841,9 @@ INIT_MAIN_LOOP:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
 	addi $sp, $sp, -4 
-	sw   $s0, 0($sp)	# $s0 = clock
+	sw   $s0, 0($sp)	# $s0 = Amount of users
 	addi $sp, $sp, -4 
-	sw   $s1, 0($sp)	# $s1 = down clock time
-	addi $sp, $sp, -4 
-	sw   $s2, 0($sp)	# $s2 = Count down clocks
+	sw   $s1, 0($sp)	# $s1 = Count amount of users
 	
 	jal INIT_MATRICES
 	
@@ -855,25 +853,23 @@ INIT_MAIN_LOOP:
 	
 	jal INIT_SCORE
 	
-	li $s0, 0
-	li $s1, 500000
-	li $s2, 0
-	li $s6, 0		# $s6 = current player in loop {0, 1, 2, 3}, NEVER USER WITH ANOTHER PURPOSE
+	li $s1, 0		# Count amount of users = 0
 	
 MAIN_LOOP:
 	
+	subi $s0, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $s0, ($s0)
 	
+MAIN_LOOP_PLAYER:
 	
+	move $a0, $s1
+	jal PLAYER_LOOP
+	addi $s1, $s1, 1
+	ble $s0, $s1,  MAIN_LOOP_PLAYER
 	
-	addi $s0, $s0, 1
-	bne $s0, $s1, MAIN_LOOP
-	
-	
-
-
 EXIT_MAIN_LOOP:
-	lw   $s2, 0($sp)
-	addi $sp, $sp, 4
+	#lw   $s2, 0($sp)
+	#addi $sp, $sp, 4
 	lw   $s1, 0($sp)
 	addi $sp, $sp, 4
 	lw   $s0, 0($sp)
@@ -885,4 +881,21 @@ EXIT_MAIN_LOOP:
 ##    End Main Loop   ##
 ########################
 	
+########################
+##    Player Loop     ##
+########################
+# $a0 = Current Player
+PLAYER_LOOP:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	
+	
+	li $v0, 1
+	syscall
 
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+########################
+##   End player Loop  ##
+########################
