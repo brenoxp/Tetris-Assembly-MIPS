@@ -14,8 +14,9 @@
 .eqv OFFSET_BOARD_POSITIONS   68 	# 068 - 084
 .eqv OFFSET_MATRICES	      84	# 084 - 1084
 .eqv OFFSET_SCORES	      5000      # 5000 - 5016
-.eqv OFFSET_USER_CLOCK	      5016      # 5016 - 5032
-.eqv OFFSET_OF_NEW_SP         5032
+.eqv OFFSET_SPEED_DOWN	      5016      # 5016 - 5020
+.eqv OFFSET_USER_CLOCK	      5020      # 5020 - 5036
+.eqv OFFSET_OF_NEW_SP         5036
 
 
 ######################
@@ -888,14 +889,37 @@ EXIT_MAIN_LOOP:
 PLAYER_LOOP:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+	
+	
+	subi $s0, $s7, OFFSET_USER_CLOCK
+	lw $s0, ($s0)
 	
 	
 	li $v0, 1
 	syscall
 
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
 ########################
 ##   End player Loop  ##
 ########################
+
+
+############################
+##   Increase Difficulty  ##
+############################
+INCREASE_DIFFICULTY:
+	subi $t0, $s7, OFFSET_SPEED_DOWN
+	lw $t1, ($t0)
+	subi $t1, $t1, 10000
+	sw $t1, ($t0)
+	jr $ra
+###############################
+##  End increase Difficulty  ##
+###############################
+
