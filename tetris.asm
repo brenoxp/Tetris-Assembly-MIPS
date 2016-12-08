@@ -48,10 +48,15 @@
 MAIN:
 	# Save $sp value into $s7
 	move $s7, $sp
-
+	
 	# Update $sp
 	subi $sp, $sp, OFFSET_OF_NEW_SP
+	
+	# Configura os controles escolhidos se for IrDA
+	#li $s1, 1
+	#jal CONTROL_CONFIG
 
+	
 	# Save number of users (Default 1)
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	li $t1, 1
@@ -62,14 +67,12 @@ MAIN:
 	li $t1, TAMX
 	li $t5, 0x00  # cor 0x00000000
 	
-	# Printa o menu e l� a op��o escolhida
+	# Printa o menu e l� a op��o escolhida, se $s1 = 0 => TECLADO, $s1 = 1 => IRDA
+	li $s1, 0
+	# li $s1, 1  <= IRDA
 	jal PRINT_MENU
-		
-	jal READ_MENU_OPTION_INPUT
 	
-	# Configura os controles escolhidos, se $s1 = 0 => TECLADO, $s1 = 1 => IRDA
-	#move $s1, $zero
-	#jal CONTROL_CONFIG
+	jal READ_MENU_OPTION_INPUT
 	
 	# Erase Screen
 	li $a0, 0x00
@@ -174,10 +177,47 @@ MENU_OUT:
 	jr $ra
 ## Fim imprime seta que seleciona o jogador
 
+### $s0 = 0 => TECLADO, $s1 = 1 => IRDA
 READ_MENU_OPTION_INPUT:
 	addi $sp, $sp, -4 
 	sw $ra, 0($sp)
 	
+	beq $s1, $zero, USE_KEYBOARD
+	la $t2, IRDA_READ_ADDRESS
+	# Pointer to keys allocation in memory	
+	subi $s5, $s7, OFFSET_REGISTERED_KEYS
+
+USE_IRDA: 
+	# Keeps IrDA on loop until it reads something from the receiver addres
+	jal IRDA_GET_KEY
+	move $s2, $t4 # tecla recebida
+	
+	# Ve se eh um up down ou escolha
+DECODE_KEY: 
+	# se for um down
+	lw $s6,($s5)
+	bne $s6, $s2, NOT_DOWN_IR
+	jal PRESS_MENU_DOWN
+	
+NOT_DOWN_IR:	
+	# se for um up
+	lw $s6,-4($s5)
+	bne $s6, $s2, NOT_UP_IR
+	jal PRESS_MENU_UP
+	
+NOT_UP_IR:
+	# se for um enter
+	lw $s6,-8($s5)
+	beq $s6, $s2, ENTER_IR
+	#nao eh enter, volta
+	j USE_IRDA
+	
+ENTER_IR:	  	
+  	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+	
+USE_KEYBOARD:
 	li $v0, 12       
   	syscall            # Read Character
   	addi $a0, $v0, 0
@@ -273,7 +313,6 @@ PRESS_MENU_UP_OUT:
 	addi $sp, $sp, 4
 	jr $ra
 # Fim PRESS_MENU_UP_OUT
-
 	
 PRESS_MENU_NOTHING:
   	li $v0, 11       
@@ -296,6 +335,7 @@ CONTROL_CONFIG:
 	# Load number of users
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t1, ($t0)
+	li $t1, 1
 	move $s0, $t1
 	
 	# Pointer to keys allocation in memory	
@@ -377,6 +417,7 @@ LOOP_CONTROL:
 # Get key = 0 - Teclado
 # Get key = 1 - IrDA
 GET_KEY:
+	move $t9, $zero
 	beq $s1, $t9, TECLADO_GET_KEY
 	addi $t9, $t9, 1
 	beq $s1, $t9, IRDA_GET_KEY
@@ -394,8 +435,8 @@ TECLADO_GET_KEY:
 IRDA_GET_KEY:
 	# Keeps searching until IrDA different than zero
 	lw $t4, 0($t2) # $t2 = IRDA_READ_ADDRESS
-	bne $t4, $zero, IRDA_GET_KEY
-	
+	beq $t4, $zero, IRDA_GET_KEY
+
 	# IrDA different than zero, save value and return
 	sw $t4, 0($t1)
 	move $t4, $zero
