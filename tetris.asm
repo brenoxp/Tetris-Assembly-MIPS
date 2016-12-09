@@ -52,6 +52,10 @@
 	CONFIG_T1:     .asciiz "Escolha a tecla >>"
 	CONFIG_T2:     .asciiz "Escolha a tecla v"
 	CONFIG_T3:     .asciiz "Escolha a tecla rotacao."
+	SCORE_P1:      .asciiz "SCORE P1:"
+	SCORE_P2:      .asciiz "SCORE P2:"
+	SCORE_P3:      .asciiz "SCORE P3:"
+	SCORE_P4:      .asciiz "SCORE P4:"
 	
 .text
 # ------  IN�?CIO DA MAIN ------
@@ -90,6 +94,8 @@ MAIN:
 	syscall
 	
 	jal INIT_MAIN_LOOP
+	
+	jal PRINT_END_SCORE
 
 	li $v0 10
 	syscall
@@ -1388,5 +1394,89 @@ INIT_USERS_CLOCKS:
 ##   End init users clocks  ##
 ##############################
 
+############################## 
+##   Print End Score        ##
+##############################
+PRINT_END_SCORE:
+	li $v0, 48
+	li $a0, 0x00
+	syscall
+	
+	subi $t1, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t0, ($t1)
+	move $s0, $t0
+	subi $s1, $s7, OFFSET_SCORES
+	
+	addi $t0, $zero, 1
+	
+	# Printa P1
+	li $v0, 104	
+	la $a0, SCORE_P1
+	li $a1, 10
+	li $a2, 60	
+	li $a3, 0x00FF	
+	syscall
+	lw $t3, 0($s1)
+	li $v0, 101
+	move $a0, $t3
+	li $a1, 90
+	li $a2, 60
+	li $a3, 0x00BB
+	syscall
+	beq $s0, $t0, END_SCORE
+	addi $t0, $t0, 1
 
+	# Printa P2
+	li $v0, 104	
+	la $a0, SCORE_P2
+	li $a1, 10
+	li $a2, 90
+	li $a3, 0x00FF	
+	syscall
+	lw $t3, -4($s1)
+	li $v0, 101
+	move $a0, $t3
+	li $a1, 90
+	li $a2, 90
+	li $a3, 0x00BB
+	syscall
+	beq $s0, $t0, END_SCORE
+	addi $t0, $t0, 1
+
+	# PRINTA P3
+	li $v0, 104	
+	la $a0, SCORE_P3
+	li $a1, 10
+	li $a2, 120	
+	li $a3, 0x00FF	
+	syscall
+	lw $t3, -8($s1)
+	li $v0, 101
+	move $a0, $t3
+	li $a1, 90
+	li $a2, 120
+	li $a3, 0x00BB
+	syscall
+	beq $s0, $t0, END_SCORE
+
+	# PRINTA P4
+	li $v0, 104	
+	la $a0, SCORE_P4
+	li $a1, 10
+	li $a2, 150	
+	li $a3, 0x00FF	
+	syscall
+	lw $t3, -12($s1)
+	li $v0, 101
+	move $a0, $t3
+	li $a1, 90
+	li $a2, 150
+	li $a3, 0x00BB
+	syscall
+
+END_SCORE:
+	jr $ra
+############################## 
+## End Print End Score      ##
+##############################
 
