@@ -928,6 +928,7 @@ MAIN_LOOP_PLAYER:
 	li $a0, 0
 	jal CREATE_PIECE
 	
+	
 	#move $a0, $s1
 	#jal PLAYER_LOOP
 	#addi $s1, $s1, 1
@@ -998,9 +999,13 @@ CREATE_PIECE_CLEAR_LOOP:
 	
 	# create line test
 	move $a0, $t0
-	jal CREATE_STRAIGHT_POLYMONIO
+	#jal CREATE_STRAIGHT_POLYMONIO
 	#jal CREATE_SQUARE_POLYMONIO
 	#jal CREATE_T_POLYMONIO
+	#jal CREATE_J_POLYMONIO
+	#jal CREATE_L_POLYMONIO
+	#jal CREATE_S_POLYMONIO
+	jal CREATE_Z_POLYMONIO
 	
 	
 	li $a0, 0
@@ -1054,7 +1059,7 @@ CREATE_SQUARE_POLYMONIO:
 	li $t1, 1
 	sw $t1, ($a1)
 	
-	li $t3, 0xAA	# piece color
+	li $t3, 0x70	# piece color
 	
 	subi $t0, $t0, 36
 	sw $t3, ($t0)
@@ -1082,7 +1087,7 @@ CREATE_T_POLYMONIO:
 	li $t1, 2
 	sw $t1, ($a1)
 	
-	li $t3, 0xAA	# piece color
+	li $t3, 0x96	# piece color
 	
 	subi $t0, $t0, 36
 	sw $t3, ($t0)
@@ -1098,18 +1103,113 @@ CREATE_T_POLYMONIO:
 ##    End T Square Polyomino           ##
 #########################################
 
+#####################################
+##    Create J Polyomino           ##
+#####################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_J_POLYMONIO:
+	move $t0, $a0
+	
+	li $t1, 3
+	sw $t1, ($a1)
+	
+	li $t3, 0xA6	# piece color
+	
+	subi $t0, $t0, 36
+	sw $t3, ($t0)
+	subi $t0, $t0, 16
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
 
-#   0 = Straight Polyomino
-#   1 = Square Polyomino
-#   2 = T-Polyomino
-#   3 = J
-#   4 = L
-#   5 = S
-#   6 = Z
+	jr $ra
+#########################################
+##    End J Square Polyomino           ##
+#########################################
 
+#####################################
+##    Create L Polyomino           ##
+#####################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_L_POLYMONIO:
+	move $t0, $a0
+	
+	li $t1, 4
+	sw $t1, ($a1)
+	
+	li $t3, 0xB6	# piece color
+	
+	subi $t0, $t0, 40
+	sw $t3, ($t0)
+	subi $t0, $t0, 8
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
 
+	jr $ra
+#########################################
+##    End L Square Polyomino           ##
+#########################################
 
+#####################################
+##    Create S Polyomino           ##
+#####################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_S_POLYMONIO:
+	move $t0, $a0
+	
+	li $t1, 5
+	sw $t1, ($a1)
+	
+	li $t3, 0xB0	# piece color
+	
+	subi $t0, $t0, 36
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 8
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
 
+	jr $ra
+#########################################
+##    End S Square Polyomino           ##
+#########################################
+
+#####################################
+##    Create Z Polyomino           ##
+#####################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_Z_POLYMONIO:
+	move $t0, $a0
+	
+	li $t1, 6
+	sw $t1, ($a1)
+	
+	li $t3, 0xCA	# piece color
+	
+	subi $t0, $t0, 32
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 16
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################
+##    End Z Square Polyomino           ##
+#########################################
 
 ################################
 ##    Print Current Piece     ##
