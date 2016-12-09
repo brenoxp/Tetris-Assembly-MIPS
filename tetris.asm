@@ -998,8 +998,9 @@ CREATE_PIECE_CLEAR_LOOP:
 	
 	# create line test
 	move $a0, $t0
-	#jal CREATE_STRAIGHT_POLYMONIO
-	jal CREATE_SQUARE_POLYMONIO
+	jal CREATE_STRAIGHT_POLYMONIO
+	#jal CREATE_SQUARE_POLYMONIO
+	#jal CREATE_T_POLYMONIO
 	
 	
 	li $a0, 0
@@ -1069,6 +1070,35 @@ CREATE_SQUARE_POLYMONIO:
 ##    End create Square Polyomino      ##
 #########################################
 
+
+#####################################
+##    Create T Polyomino           ##
+#####################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_T_POLYMONIO:
+	move $t0, $a0
+	
+	li $t1, 2
+	sw $t1, ($a1)
+	
+	li $t3, 0xAA	# piece color
+	
+	subi $t0, $t0, 36
+	sw $t3, ($t0)
+	subi $t0, $t0, 12
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################
+##    End T Square Polyomino           ##
+#########################################
+
+
 #   0 = Straight Polyomino
 #   1 = Square Polyomino
 #   2 = T-Polyomino
@@ -1112,7 +1142,7 @@ PRINT_CURRENT_PIECE:
 	subi $s0, $s0, 4
 	lw $s3, ($s0)		# load Y
 	
-	addi $s5, $s2, 5	# calculate end X
+	addi $s5, $s2, 4	# calculate end X
 	
 	subi $s0, $s0, 12	# now $s0 is in te first position of the matrix
 	subi $s1, $s0, 64	# $s1 saves the position to end the loop
