@@ -1,4 +1,4 @@
-.eqv VGA 0xFF000000
+﻿.eqv VGA 0xFF000000
 .eqv TAMX 320
 .eqv TAMY 240
 .eqv PLAYERS_1_MENU_PY 100
@@ -26,6 +26,8 @@
 
 .data
 	NUM:   .float  160.0
+
+	SEED: .word 0x00001015
 	
 	TETRIS_STRING: .asciiz "TETRIS\n"
 	PLAYERS_1:     .asciiz "1 Jogador\n"
@@ -1018,4 +1020,28 @@ INIT_USERS_CLOCKS:
 ##############################
 
 
+########################################
+###Random-Number Generator (RNGesus)####
+########################################
 
+#utilizando LCG (a = 5, c = 1, m = 16, x0 = SEED)
+RANDOM: la $t0, SEED
+	lw $t1, 0($t0) 		#carrega em t1 o valor do seed
+	li $t2, 5
+	mult $t1, $t2		#a*Xn
+	mflo $t1
+	addi $t1, $t1, 1	# a*Xn + c
+	li $t2, 16
+	div $t1, $t2		#mod m
+	mfhi $t1		#t1 = (a*Xn+c)%m = Xn+1
+	sw $t1, 0($t0)		#devolve para poder calcular mais adiante o prox
+	
+	li $t2, 7
+	div $t1, $t2		#coloca o resultado do LCG para mod 7
+	mfhi $t1
+	move $v0, $t1		#coloca o valor em v0 para retorno
+	jr $ra
+	
+#############
+## End RNG ##
+#############
