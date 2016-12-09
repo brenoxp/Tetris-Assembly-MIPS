@@ -1,4 +1,4 @@
-﻿.eqv VGA 0xFF000000
+.eqv VGA 0xFF000000
 .eqv TAMX 320
 .eqv TAMY 240
 .eqv PLAYERS_1_MENU_PY 100
@@ -9,14 +9,28 @@
 ######################
 ##  Memory offsets  ##
 ######################
-.eqv OFFSET_NUMBER_OF_PLAYERS 0   	# 000 - 004
-.eqv OFFSET_REGISTERED_KEYS   4	        # 004 - 068
-.eqv OFFSET_BOARD_POSITIONS   68 	# 068 - 084
-.eqv OFFSET_MATRICES	      84	# 084 - 1084
-.eqv OFFSET_SCORES	      5000      # 5000 - 5016
-.eqv OFFSET_SPEED_DOWN	      5016      # 5016 - 5020
-.eqv OFFSET_USER_CLOCK	      5020      # 5020 - 5036
-.eqv OFFSET_OF_NEW_SP         5036
+.eqv OFFSET_NUMBER_OF_PLAYERS 	0   		# 000 - 004
+.eqv OFFSET_REGISTERED_KEYS   	4	        # 004 - 068
+.eqv OFFSET_BOARD_POSITIONS   	68 		# 068 - 084
+.eqv OFFSET_MATRICES	      	84		# 084 - 1084
+.eqv OFFSET_SCORES	      	5000		# 5000 - 5016
+.eqv OFFSET_SPEED_DOWN	      	5016		# 5016 - 5020
+.eqv OFFSET_USER_CLOCK	      	5020		# 5020 - 5036
+.eqv OFFSET_TYPE_CURRENT_PIECE 	5036		# 5036 - 5052	
+.eqv OFFSET_INFO_PIECE 		5052		# 5052 - 5372 ({X, Y, Typer, Rotation, [4X4]}) * 4 PLAYERS
+.eqv OFFSET_OF_NEW_SP         	5372
+
+
+# Info piece type
+#   0 = Straight Polyomino
+#   1 = Square Polyomino
+#   2 = T-Polyomino
+#   3 = J
+#   4 = L
+#   5 = S
+#   6 = Z
+#
+# See https://en.wikipedia.org/wiki/Tetromino#One-sided_tetrominoes
 
 
 ######################
@@ -26,8 +40,6 @@
 
 .data
 	NUM:   .float  160.0
-
-	SEED: .word 0x00001015
 	
 	TETRIS_STRING: .asciiz "TETRIS\n"
 	PLAYERS_1:     .asciiz "1 Jogador\n"
@@ -912,15 +924,18 @@ MAIN_LOOP:
 	
 	
 MAIN_LOOP_PLAYER:
+
+	li $a0, 0
+	jal CREATE_PIECE
 	
-	move $a0, $s1
-	jal PLAYER_LOOP
-	addi $s1, $s1, 1
-	bne $s1, $s0,  MAIN_LOOP_PLAYER
-	li $s1, 0
+	#move $a0, $s1
+	#jal PLAYER_LOOP
+	#addi $s1, $s1, 1
+	#bne $s1, $s0,  MAIN_LOOP_PLAYER
+	#li $s1, 0
 	
-	addi $s2, $s2, 1
-	bne $s2, 200000, MAIN_LOOP
+	#addi $s2, $s2, 1
+	#bne $s2, 200000, MAIN_LOOP
 	
 	
 EXIT_MAIN_LOOP:
@@ -936,6 +951,220 @@ EXIT_MAIN_LOOP:
 ########################
 ##    End Main Loop   ##
 ########################
+
+
+########################
+##    Create Piece    ##
+########################
+# $a0 = User to create piece {0, 1, 2, 3}
+CREATE_PIECE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+	
+	move $s0, $a0	#$save $a0 in $s0
+	
+	subi $t0, $s7, OFFSET_INFO_PIECE
+	mul $t1, $s0, 72	# bytes in info matrix
+	sub $t0, $t0, $t1
+	
+	li $t1, 3	
+	sw $t1, ($t0)		#save initial x
+	
+	subi $t0, $t0, 4
+	li $t1, -4
+	sw $t1, ($t0)		#save initial y
+	
+	subi $t0, $t0, 4
+	move $a1, $t1		 # Send address of Type to bem saved
+	
+	subi $t0, $t0, 4
+	li $t1, 0
+	sw $t1, ($t0)		#save rotation
+	
+	subi $t0, $t0, 4	# now $t0 is on the first position of the matrix
+	
+	#clear matrix (16 positions)
+	move $t1, $t0
+	li $t2, 64
+	sub $t2, $t1, $t2
+
+CREATE_PIECE_CLEAR_LOOP:
+	li $t3, 0x00
+	sw $t3, ($t1)
+	subi $t1, $t1, 4
+	bne $t1, $t2 CREATE_PIECE_CLEAR_LOOP
+	
+	# create line test
+	move $a0, $t0
+	#jal CREATE_STRAIGHT_POLYMONIO
+	jal CREATE_SQUARE_POLYMONIO
+	
+	
+	li $a0, 0
+	jal PRINT_CURRENT_PIECE
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+########################
+##   End create Piece ##
+########################
+
+#####################################
+##    Create Straight Polyomino    ##
+#####################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_STRAIGHT_POLYMONIO:
+	move $t0, $a0
+	
+	li $t1, 0
+	sw $t1, ($a1)
+	
+	li $t3, 0xAA	# piece color
+	
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 16
+	sw $t3, ($t0)
+	subi $t0, $t0, 16
+	sw $t3, ($t0)
+	subi $t0, $t0, 16
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################
+##    End create Straight Polyomino    ##
+#########################################
+
+#####################################
+##    Create Square  Polyomino     ##
+#####################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_SQUARE_POLYMONIO:
+	move $t0, $a0
+	
+	li $t1, 1
+	sw $t1, ($a1)
+	
+	li $t3, 0xAA	# piece color
+	
+	subi $t0, $t0, 36
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 12
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################
+##    End create Square Polyomino      ##
+#########################################
+
+#   0 = Straight Polyomino
+#   1 = Square Polyomino
+#   2 = T-Polyomino
+#   3 = J
+#   4 = L
+#   5 = S
+#   6 = Z
+
+
+
+
+
+################################
+##    Print Current Piece     ##
+################################
+# $a0 = Player {0, 1, 2, 3}
+PRINT_CURRENT_PIECE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s1, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s2, 0($sp)	# $s2 = X
+	addi $sp, $sp, -4 
+	sw   $s3, 0($sp)	# $s3 = Y
+	addi $sp, $sp, -4 
+	sw   $s4, 0($sp)	# $s4 = player
+	addi $sp, $sp, -4 
+	sw   $s5, 0($sp)	# $s5 = end X
+
+	move $s4, $a0
+
+	subi $t0, $s7, OFFSET_INFO_PIECE
+	mul $t1, $a0, 72	# bytes in info matrix
+	sub $s0, $t0, $t1	# $s0 = fist position in info
+	
+	#({X, Y, Typer, Rotation, [4X4]})
+	lw $s2, ($s0)		# load X
+	subi $s0, $s0, 4
+	lw $s3, ($s0)		# load Y
+	
+	addi $s5, $s2, 5	# calculate end X
+	
+	subi $s0, $s0, 12	# now $s0 is in te first position of the matrix
+	subi $s1, $s0, 64	# $s1 saves the position to end the loop
+	
+PRINT_CURRENT_PIECE_LOOP:
+	lw $t0, ($s0)
+	
+	beq $t0, 0x00, DO_NOT_PRINT_CURRENT_PIECE
+	# Print square
+	
+	# $a0 = X position
+	# $a1 = Y position
+	# $a2 = color
+	# $a3 = Player {0, 1, 2, 3}
+
+	
+	move $a0, $s2
+	move $a1, $s3
+	move $a2, $t0
+	move $a3, $s4
+	jal PRINT_SQUARE
+	
+	
+DO_NOT_PRINT_CURRENT_PIECE:
+	
+	addi $s2, $s2, 1
+	bne $s2, $s5, DO_NOT_INCREASE_Y
+	subi $s2, $s2, 4
+	addi $s3, $s3, 1
+DO_NOT_INCREASE_Y:
+	
+	subi $s0, $s0, 4
+	bne $s0, $s1, PRINT_CURRENT_PIECE_LOOP
+	
+	lw   $s5, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s4, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s3, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s2, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s1, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+################################
+##   End Print Current Piece  ##
+################################
 	
 ########################
 ##    Player Loop     ##
@@ -1020,28 +1249,4 @@ INIT_USERS_CLOCKS:
 ##############################
 
 
-########################################
-###Random-Number Generator (RNGesus)####
-########################################
 
-#utilizando LCG (a = 5, c = 1, m = 16, x0 = SEED)
-RANDOM: la $t0, SEED
-	lw $t1, 0($t0) 		#carrega em t1 o valor do seed
-	li $t2, 5
-	mult $t1, $t2		#a*Xn
-	mflo $t1
-	addi $t1, $t1, 1	# a*Xn + c
-	li $t2, 16
-	div $t1, $t2		#mod m
-	mfhi $t1		#t1 = (a*Xn+c)%m = Xn+1
-	sw $t1, 0($t0)		#devolve para poder calcular mais adiante o prox
-	
-	li $t2, 7
-	div $t1, $t2		#coloca o resultado do LCG para mod 7
-	mfhi $t1
-	move $v0, $t1		#coloca o valor em v0 para retorno
-	jr $ra
-	
-#############
-## End RNG ##
-#############
