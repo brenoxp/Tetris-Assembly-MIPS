@@ -925,7 +925,7 @@ MAIN_LOOP:
 	
 MAIN_LOOP_PLAYER:
 
-	li $a0, 0
+	li $a0, 1
 	jal CREATE_PIECE
 	
 	
@@ -974,7 +974,7 @@ CREATE_PIECE:
 	sw $t1, ($t0)		#save initial x
 	
 	subi $t0, $t0, 4
-	li $t1, -4
+	li $t1, -3
 	sw $t1, ($t0)		#save initial y
 	
 	subi $t0, $t0, 4
@@ -1008,7 +1008,8 @@ CREATE_PIECE_CLEAR_LOOP:
 	jal CREATE_Z_POLYMONIO
 	
 	
-	li $a0, 0
+	move $a0, $s0
+	li $a1, 0
 	jal PRINT_CURRENT_PIECE
 
 
@@ -1215,6 +1216,7 @@ CREATE_Z_POLYMONIO:
 ##    Print Current Piece     ##
 ################################
 # $a0 = Player {0, 1, 2, 3}
+# $a1 = if ($a1 == 1) print black
 PRINT_CURRENT_PIECE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
@@ -1230,8 +1232,11 @@ PRINT_CURRENT_PIECE:
 	sw   $s4, 0($sp)	# $s4 = player
 	addi $sp, $sp, -4 
 	sw   $s5, 0($sp)	# $s5 = end X
+	addi $sp, $sp, -4 
+	sw   $s6, 0($sp)
 
 	move $s4, $a0
+	move $s6, $a1
 
 	subi $t0, $s7, OFFSET_INFO_PIECE
 	mul $t1, $a0, 72	# bytes in info matrix
@@ -1257,14 +1262,17 @@ PRINT_CURRENT_PIECE_LOOP:
 	# $a1 = Y position
 	# $a2 = color
 	# $a3 = Player {0, 1, 2, 3}
-
+	
+	bne $s6, 1, PRINT_DEFAULT_COLOR
+	# print black
+	li $t0, 0x00
+PRINT_DEFAULT_COLOR:
 	
 	move $a0, $s2
 	move $a1, $s3
 	move $a2, $t0
 	move $a3, $s4
 	jal PRINT_SQUARE
-	
 	
 DO_NOT_PRINT_CURRENT_PIECE:
 	
@@ -1277,6 +1285,8 @@ DO_NOT_INCREASE_Y:
 	subi $s0, $s0, 4
 	bne $s0, $s1, PRINT_CURRENT_PIECE_LOOP
 	
+	lw   $s6, 0($sp)
+	addi $sp, $sp, 4
 	lw   $s5, 0($sp)
 	addi $sp, $sp, 4
 	lw   $s4, 0($sp)
