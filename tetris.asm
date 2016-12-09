@@ -38,10 +38,6 @@
 	CONFIG_T1:     .asciiz "Escolha a tecla >>"
 	CONFIG_T2:     .asciiz "Escolha a tecla v"
 	CONFIG_T3:     .asciiz "Escolha a tecla rotacao."
-	SCORE_P1:      .asciiz "SCORE P1: "
-	SCORE_P2:      .asciiz "SCORE P2: "
-	SCORE_P3:      .asciiz "SCORE P3: "
-	SCORE_P4:      .asciiz "SCORE P4: " 
 	
 .text
 # ------  IN�?CIO DA MAIN ------
@@ -844,33 +840,49 @@ INIT_MAIN_LOOP:
 	addi $sp, $sp, -4 
 	sw   $s0, 0($sp)	# $s0 = Amount of users
 	addi $sp, $sp, -4 
-	sw   $s1, 0($sp)	# $s1 = Count amount of users
+	sw   $s1, 0($sp)	# $s1 = Count amount of users ($s1 -> $s0) 
+	addi $sp, $sp, -4 
+	sw   $s2, 0($sp)	# apagar 
+	
+	li $s2, 0	# apagar 
 	
 	jal INIT_MATRICES
 	
 	jal PRINT_STATIC_BOARDS
 	
-	jal PRINT_BOARDS
+	#jal PRINT_BOARDS
 	
 	jal INIT_SCORE
 	
-	li $s1, 0		# Count amount of users = 0
+	jal INIT_USERS_CLOCKS
 	
-MAIN_LOOP:
+	subi $t0, $s7, OFFSET_SPEED_DOWN
+	li $t1, 50000
+	sw $t1, ($t0)		# save initial difficulty
+	
+	li $s1, 0		# Count amount of users = 0
 	
 	subi $s0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $s0, ($s0)
+	
+MAIN_LOOP:
+	
 	
 MAIN_LOOP_PLAYER:
 	
 	move $a0, $s1
 	jal PLAYER_LOOP
 	addi $s1, $s1, 1
-	ble $s0, $s1,  MAIN_LOOP_PLAYER
+	bne $s1, $s0,  MAIN_LOOP_PLAYER
+	li $s1, 0
+	
+	addi $s2, $s2, 1
+	bne $s2, 200000, MAIN_LOOP
+	
 	
 EXIT_MAIN_LOOP:
-	#lw   $s2, 0($sp)
-	#addi $sp, $sp, 4
+	lw   $s2, 0($sp)
+	addi $sp, $sp, 4
 	lw   $s1, 0($sp)
 	addi $sp, $sp, 4
 	lw   $s0, 0($sp)
@@ -892,13 +904,31 @@ PLAYER_LOOP:
 	addi $sp, $sp, -4 
 	sw   $s0, 0($sp)
 	
+	move $t5, $a0
 	
-	subi $s0, $s7, OFFSET_USER_CLOCK
-	lw $s0, ($s0)
+	subi $t0, $s7, OFFSET_USER_CLOCK	# $t0 = offset user clock
+	mul $a0, $a0, 4
+	sub $t0, $t0, $a0 
+	lw $t1, ($t0)				# $t1 = User clock
 	
+	subi $t2, $s7, OFFSET_SPEED_DOWN	# $t2 = offset speed down
+	lw $t3, ($t2)				# $t3 = speed down
 	
+	bne $t1, $t3, PLAYER_DO_NOTHING
+	# down trigger
+	
+	move $a0, $t5
 	li $v0, 1
 	syscall
+	
+	li $t1, 0
+	sw $t1, ($t0)		# user clock = 0
+	
+PLAYER_DO_NOTHING:
+	
+	addi $t1, $t1, 1	# User_clock++
+	sw $t1, ($t0)
+	
 
 	lw   $s0, 0($sp)
 	addi $sp, $sp, 4
@@ -922,4 +952,29 @@ INCREASE_DIFFICULTY:
 ###############################
 ##  End increase Difficulty  ##
 ###############################
+
+############################
+##   Init users clocks    ##
+############################
+INIT_USERS_CLOCKS: 
+	subi $t0, $s7, OFFSET_USER_CLOCK
+	
+	li $t1, 0
+	sw $t1, ($t0)
+	
+	subi $t0, $t0, 4
+	sw $t1, ($t0)
+	
+	subi $t0, $t0, 4
+	sw $t1, ($t0)
+	
+	subi $t0, $t0, 4
+	sw $t1, ($t0)
+	
+	jr $ra
+##############################
+##   End init users clocks  ##
+##############################
+
+
 
