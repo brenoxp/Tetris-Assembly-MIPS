@@ -962,31 +962,35 @@ PLAYER_LOOP:
 	sw   $ra, 0($sp)
 	addi $sp, $sp, -4 
 	sw   $s0, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s1, 0($sp)
 	
 	move $t5, $a0
 	
-	subi $t0, $s7, OFFSET_USER_CLOCK	# $t0 = offset user clock
+	subi $s0, $s7, OFFSET_USER_CLOCK	# $t0 = offset user clock
 	mul $a0, $a0, 4
-	sub $t0, $t0, $a0 
-	lw $t1, ($t0)				# $t1 = User clock
+	sub $s0, $s0, $a0 
+	lw $s1, ($s0)						# $t1 = User clock
 	
 	subi $t2, $s7, OFFSET_SPEED_DOWN	# $t2 = offset speed down
-	lw $t3, ($t2)				# $t3 = speed down
+	lw $t3, ($t2)						# $t3 = speed down
 	
-	bne $t1, $t3, PLAYER_DO_NOTHING
+	bne $s1, $t3, PLAYER_DO_NOTHING
 	# down trigger
 	
 	move $a0, $t5
 	jal DOWN_CURRENT_PIECE
 	
-	li $t1, 0
-	sw $t1, ($t0)		# user clock = 0
+	li $s1, 0
+	sw $s1, ($s0)						# user clock = 0
 	
 	PLAYER_DO_NOTHING:
 	
-	addi $t1, $t1, 1	# User_clock++
-	sw $t1, ($t0)
-	
+	addi $s1, $s1, 1					# User_clock++
+	sw $s1, ($s0)
+
+	lw   $s1, 0($sp)
+	addi $sp, $sp, 4
 	lw   $s0, 0($sp)
 	addi $sp, $sp, 4
 	lw   $ra, 0($sp)
@@ -1003,6 +1007,10 @@ PLAYER_LOOP:
 DOWN_CURRENT_PIECE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+
+	move $s0, $a0
 
 	li $a1, 1
 	jal PRINT_CURRENT_PIECE
@@ -1013,12 +1021,15 @@ DOWN_CURRENT_PIECE:
 	
 	subi $t0, $t0, 4
 	lw $t1, ($t0)
-	subi $t1, $t1, 1
+	addi $t1, $t1, 1
 	sw $t1, ($t0)		#save initial y
 	
+	move $a0, $s0
 	li $a1, 0
-	#jal PRINT_CURRENT_PIECE
+	jal PRINT_CURRENT_PIECE
 
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
