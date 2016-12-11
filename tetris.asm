@@ -1879,9 +1879,7 @@ INIT_USERS_CLOCKS:
 RANDOM: 
 
 	la $t0, SEED
-	lw $t1, 0($t0) 		#carrega em t1 o valor do seed		
-	subi $t1, $s7, OFFSET_USER_CLOCK
-	lw $t1, ($t1)
+	lw $t1, 0($t0) 		#carrega em t1 o valor do seed	
 
 	li $t2, 5		
 	mult $t1, $t2		#a*Xn		
