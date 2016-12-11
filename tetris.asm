@@ -920,6 +920,8 @@ INIT_MAIN_LOOP:
 
 	li $a0, 1
 	jal CREATE_PIECE
+
+	
 	
 	MAIN_LOOP:
 	
@@ -973,6 +975,29 @@ PLAYER_LOOP:
 	subi $t2, $s7, OFFSET_SPEED_DOWN	# $t2 = offset speed down
 	lw $t3, ($t2)						# $t3 = speed down
 	
+
+	# keyboard data address 0xff100004
+	# right -> 110
+	# left -> 97
+
+	#la $a0, 0xFF100004
+	#li $v0, 11
+	#syscall
+
+	
+
+  	
+  	move $a0, $s2
+	#jal CAN_LEFT_CURRENT_PIECE
+
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT
+
+	move $a0, $s2
+	jal COPY_AUX_PIECE_AND_PRINT
+
+  	PLAYER_DID_NOT_PRESS_RIGHT:
+
+
 	bne $s1, $t3, PLAYER_DO_NOTHING
 	# down trigger
 	move $a0, $s2
@@ -1123,6 +1148,78 @@ CAN_DOWN_CURRENT_PIECE:
 ##  End can down current Piece  ##
 ##################################
 
+##############################
+##  Can right current Piece  ##
+##############################
+# $a0 = player
+# $v0 = (can_down) ? 1 : 0
+CAN_RIGHT_CURRENT_PIECE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+
+	move $s0, $a0
+	jal COPY_CURRENT_PIECE
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+
+	#({X, Y, Type, Rotation, [4X4]})
+
+	lw $t0, ($t1)
+	addi $t0, $t0, 1
+	sw $t0, ($t1)
+
+	# $a0 = player
+	# $v0 = (can_move) ? 1 : 0
+	move $a0, $s0
+	jal AUX_PIECE_CAN_MOVE
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+##################################
+##  End can right current Piece ##
+##################################
+
+##############################
+##  Can left current Piece  ##
+##############################
+# $a0 = player
+# $v0 = (can_down) ? 1 : 0
+CAN_LEFT_CURRENT_PIECE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+
+	move $s0, $a0
+	jal COPY_CURRENT_PIECE
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+
+	#({X, Y, Type, Rotation, [4X4]})
+
+	lw $t0, ($t1)
+	subi $t0, $t0, 1
+	sw $t0, ($t1)
+
+	# $a0 = player
+	# $v0 = (can_move) ? 1 : 0
+	move $a0, $s0
+	jal AUX_PIECE_CAN_MOVE
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+##################################
+##  End can left current Piece  ##
+##################################
+
 #######################################
 ##  Copy current piece to aux piece  ##
 #######################################
@@ -1243,6 +1340,9 @@ AUX_PIECE_CAN_MOVE:
 
 	lw $t0, ($s2)
 	beq $t0, 0x00, AUX_PIECE_CAN_MOVE_CONTINUE
+
+	bgt $s0, 9, AUX_PIECE_CANT_MOVE	# X > 10 then cant move
+	blt $s0, 0, AUX_PIECE_CANT_MOVE	# X <  0 then cant move
 
 	move $a0, $s5
 	move $a1, $s0	# X
