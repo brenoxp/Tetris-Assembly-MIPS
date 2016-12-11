@@ -11,14 +11,15 @@
 ######################
 .eqv OFFSET_NUMBER_OF_PLAYERS 	0   		# 000 - 004
 .eqv OFFSET_REGISTERED_KEYS   	4	        # 004 - 068
-.eqv OFFSET_BOARD_POSITIONS   	68 		# 068 - 084
-.eqv OFFSET_MATRICES	      	84		# 084 - 1084
-.eqv OFFSET_SCORES	      	5000		# 5000 - 5016
+.eqv OFFSET_BOARD_POSITIONS   	68 			# 068 - 084
+.eqv OFFSET_MATRICES	      	84			# 084 - 1084
+.eqv OFFSET_SCORES	      		5000		# 5000 - 5016
 .eqv OFFSET_SPEED_DOWN	      	5016		# 5016 - 5020
 .eqv OFFSET_USER_CLOCK	      	5020		# 5020 - 5036
 .eqv OFFSET_TYPE_CURRENT_PIECE 	5036		# 5036 - 5052	
-.eqv OFFSET_INFO_PIECE 		5052		# 5052 - 5372 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
-.eqv OFFSET_OF_NEW_SP         	5372
+.eqv OFFSET_INFO_PIECE 			5052		# 5052 - 5372 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
+.eqv OFFSET_INFO_AUX_PIECE 		5372		# 5372 - 5452 ({X, Y, Type, Rotation, [4X4]})
+.eqv OFFSET_OF_NEW_SP         	5452
 
 
 # Info piece type
@@ -54,6 +55,8 @@
 	CONFIG_T1:     .asciiz "Escolha a tecla >>"
 	CONFIG_T2:     .asciiz "Escolha a tecla v"
 	CONFIG_T3:     .asciiz "Escolha a tecla rotacao."
+	NL:            .asciiz "\n"
+	SPACE:         .asciiz " "
 	
 .text
 # ------  IN�?CIO DA MAIN ------
@@ -71,7 +74,7 @@ MAIN:
 	
 	# Save number of users (Default 1)
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
-	li $t1, 1
+	li $t1, 2
 	sw $t1, ($t0)
 
 	# Inicializa a tela
@@ -678,10 +681,6 @@ PRINT_SQUARE:
 ##    Init Matrices   ##
 ########################
 INIT_MATRICES:
-	addi $sp, $sp, -4 
-	sw   $ra, 0($sp)
-
-	
 	# $t0 position of memory to save color
 	# $t1 Amount of Players
 	# $t2 count 0 -> $t1
@@ -721,10 +720,7 @@ INIT_MATRICES:
 	
 	addi $t2, $t2, 1
 	bne $t1, $t2, INIT_MATRICES_MAIN_LOOP
-	
-	
-	lw   $ra, 0($sp)
-	addi $sp, $sp, 4
+
 	jr $ra
 ########################
 ## end Init Matrices  ##
@@ -909,7 +905,7 @@ INIT_MAIN_LOOP:
 	jal INIT_USERS_CLOCKS
 	
 	subi $t0, $s7, OFFSET_SPEED_DOWN
-	li $t1, 5000
+	li $t1, 10
 	sw $t1, ($t0)		# save initial difficulty
 	
 	li $s1, 0		# Count amount of users = 0
@@ -921,10 +917,13 @@ INIT_MAIN_LOOP:
 	
 	li $a0, 0
 	jal CREATE_PIECE
+
+	li $a0, 1
+	jal CREATE_PIECE
+
+
 	
 	MAIN_LOOP:
-	
-	
 	
 	
 	MAIN_LOOP_PLAYER:
@@ -936,7 +935,7 @@ INIT_MAIN_LOOP:
 	li $s1, 0
 	
 	addi $s2, $s2, 1
-	bne $s2, 50000, MAIN_LOOP
+	bne $s2, 500, MAIN_LOOP
 	
 	
 	EXIT_MAIN_LOOP:
@@ -964,8 +963,10 @@ PLAYER_LOOP:
 	sw   $s0, 0($sp)
 	addi $sp, $sp, -4 
 	sw   $s1, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s2, 0($sp)
 	
-	move $t5, $a0
+	move $s2, $a0
 	
 	subi $s0, $s7, OFFSET_USER_CLOCK	# $t0 = offset user clock
 	mul $a0, $a0, 4
@@ -977,9 +978,19 @@ PLAYER_LOOP:
 	
 	bne $s1, $t3, PLAYER_DO_NOTHING
 	# down trigger
-	
-	move $a0, $t5
-	jal DOWN_CURRENT_PIECE
+	move $a0, $s2
+	jal CAN_DOWN_CURRENT_PIECE
+	beq $v0, 0, CAN_NOT_DOWN_CURRENT_PIECE
+
+	move $a0, $s2
+	jal COPY_AUX_PIECE_AND_PRINT
+
+	j DID_DOWN_CURRENT_PIECE
+	CAN_NOT_DOWN_CURRENT_PIECE: # If cant down piece, then create new one
+
+	move $a0, $s2
+	jal CREATE_PIECE
+	DID_DOWN_CURRENT_PIECE:
 	
 	li $s1, 0
 	sw $s1, ($s0)						# user clock = 0
@@ -989,6 +1000,8 @@ PLAYER_LOOP:
 	addi $s1, $s1, 1					# User_clock++
 	sw $s1, ($s0)
 
+	lw   $s2, 0($sp)
+	addi $sp, $sp, 4
 	lw   $s1, 0($sp)
 	addi $sp, $sp, 4
 	lw   $s0, 0($sp)
@@ -999,6 +1012,246 @@ PLAYER_LOOP:
 ########################
 ##   End player Loop  ##
 ########################
+
+##############################
+##  Can down current Piece  ##
+##############################
+# $a0 = player
+# $v0 = (can_down) ? 1 : 0
+CAN_DOWN_CURRENT_PIECE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+
+	move $s0, $a0
+	jal COPY_CURRENT_PIECE
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+
+	#({X, Y, Type, Rotation, [4X4]})
+	subi $t1, $t1, 4 	# $t1 = Y
+
+	lw $t0, ($t1)
+	addi $t0, $t0, 1
+	sw $t0, ($t1)
+
+	# $a0 = player
+	# $v0 = (can_move) ? 1 : 0
+	move $a0, $s0
+	jal AUX_PIECE_CAN_MOVE
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+##################################
+##  End can down current Piece  ##
+##################################
+
+#######################################
+##  Copy current piece to aux piece  ##
+#######################################
+# $a0 = player
+COPY_CURRENT_PIECE:
+	subi $t0, $s7, OFFSET_INFO_PIECE
+	mul $a0, $a0, 80
+	sub $t0, $t0, $a0						# $t0 = Current piece
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE 	# $t1 = Aux Piece
+
+	li $t2, 0								# $t2 = Count
+
+	COPY_CURRENT_PIECE_LOOP:
+	lw $t3, ($t0)
+	sw $t3, ($t1)
+
+	subi $t0, $t0, 4
+	subi $t1, $t1, 4
+	addi $t2, $t2, 1
+	bne $t2, 20, COPY_CURRENT_PIECE_LOOP
+
+	jr $ra
+###########################################
+##  End copy current piece to aux piece  ##
+###########################################
+
+#######################################
+##  Copy aux piece to current piece  ##
+#######################################
+# $a0 = player
+COPY_AUX_PIECE_AND_PRINT:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+
+	move $s0, $a0
+	li $a1, 1		# print black
+	jal PRINT_CURRENT_PIECE
+
+	move $a0, $s0
+
+	subi $t0, $s7, OFFSET_INFO_PIECE
+	mul $a0, $a0, 80
+	sub $t0, $t0, $a0						# $t0 = Current piece
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE	# $t1 = Aux Piece	
+
+	li $t2, 0								# $t2 = count
+
+	COPY_AUX_PIECE_LOOP:
+	lw $t4, ($t1)
+	sw $t4, ($t0)
+
+	subi $t0, $t0, 4
+	subi $t1, $t1, 4
+	addi $t2, $t2, 1
+	bne $t2, 20, COPY_AUX_PIECE_LOOP
+
+	move $a0, $s0
+	li $a1, 0		# print normal
+	jal PRINT_CURRENT_PIECE
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+###########################################
+##  End copy aux piece to current piece  ##
+###########################################
+
+
+##################################
+##      Aux piece can move      ##
+##################################
+# Recieves a piece that mean to be moved, avaliate
+# if this piece can visualy appear in this position 
+# $a0 = player
+# $v0 = (can_move) ? 1 : 0
+AUX_PIECE_CAN_MOVE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s1, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s2, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s3, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s4, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s5, 0($sp)
+
+	move $s5, $a0
+	
+	subi $s2, $s7, OFFSET_INFO_AUX_PIECE
+	lw $s0, ($s2)				# $s0 = X
+	addi $s4, $s0, 4 			# $s4 = Max X
+
+	subi $s2, $s2, 4
+	lw $s1, ($s2)				# $s1 = Y
+	
+	subi $s2, $s2, 12			# $s2 = start matrix
+	subi $s3, $s2, 64			# $s3 = end matrix
+
+	# $a0 = player {0, 1, 2, 3}
+	# $a1 = X {0 - 20}
+	# $a2 = Y {0 -  9}
+	# $v0 = (have_piece) ? 1 : 0
+	# HAVE_PIECE
+
+	AUX_PIECE_CAN_MOVE_LOOP:
+
+	lw $t0, ($s2)
+	beq $t0, 0x00, AUX_PIECE_CAN_MOVE_CONTINUE
+
+
+	move $a0, $s5
+	move $a1, $s0	# X
+	move $a2, $s1 	# Y
+	jal HAVE_PIECE
+
+	beq $v0, 1, AUX_PIECE_CANT_MOVE
+
+	AUX_PIECE_CAN_MOVE_CONTINUE:
+
+	addi $s0, $s0, 1
+	bne $s0, $s4, AUX_PIECE_CAN_MOVE_NOT_UPDATE_X
+	addi $s1, $s1, 1	# update Y
+	subi $s0, $s0, 4	# restore X
+	AUX_PIECE_CAN_MOVE_NOT_UPDATE_X:
+
+	subi $s2, $s2, 4
+	bgt $s2, $s3, AUX_PIECE_CAN_MOVE_LOOP
+
+	li $v0, 1
+	j AUX_PIECE_CAN_MOVE_EXIT
+	AUX_PIECE_CANT_MOVE:
+	li $v0, 0
+	AUX_PIECE_CAN_MOVE_EXIT:
+
+	lw   $s5, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s4, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s3, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s2, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s1, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+######################################
+##      End aux piece can move      ##
+######################################
+
+
+##################################
+##      Have Piece in place     ##
+##################################
+# $a0 = player {0, 1, 2, 3}
+# $a1 = X {0 - 9}
+# $a2 = Y {0 - 20}
+# $v0 = (have_piece) ? 1 : 0
+HAVE_PIECE:
+	move $t0, $a1
+	move $a1, $a2
+	move $a2, $t0
+
+	mul $a0, $a0, 1000
+	
+	subi $t0, $s7, OFFSET_MATRICES
+	sub $t0, $t0, $a0
+
+	subi $t0, $t0, 160
+
+	mul $a1, $a1, 10
+	add $a1, $a1, $a2
+	mul $a1, $a1, 4
+
+	sub $t0, $t0, $a1
+
+	lw $t0, ($t0)
+
+	li $v0, 0
+	beq $t0, 0x00, HAVE_PIECE_EMPTY
+	li $v0, 1
+	HAVE_PIECE_EMPTY:
+
+	jr $ra
+##################################
+##   End Have Piece in place    ##
+##################################
 
 ##########################
 ##  Down current Piece  ##
@@ -1016,7 +1269,7 @@ DOWN_CURRENT_PIECE:
 	jal PRINT_CURRENT_PIECE
 
 	subi $t0, $s7, OFFSET_INFO_PIECE
-	mul $t1, $s0, 72	# bytes in info matrix
+	mul $t1, $s0, 80	# bytes in info matrix
 	sub $t0, $t0, $t1
 	
 	subi $t0, $t0, 4
@@ -1051,10 +1304,10 @@ CREATE_PIECE:
 	move $s0, $a0	#$save $a0 in $s0
 	
 	subi $t0, $s7, OFFSET_INFO_PIECE
-	mul $t1, $s0, 72	# bytes in info matrix
+	mul $t1, $s0, 80	# bytes in info matrix
 	sub $t0, $t0, $t1
 	
-	li $t1, 3	
+	li $t1, 3
 	sw $t1, ($t0)		#save initial x
 	
 	subi $t0, $t0, 4
@@ -1084,7 +1337,8 @@ CREATE_PIECE:
 	# create line test
 	move $a0, $t0
 	
-	jal RANDOM
+	#jal RANDOM
+	li $v0, 1
 	
 	bne $v0, 0, NOT_CREATE_PIECE_0
 	jal CREATE_STRAIGHT_POLYMONIO
@@ -1345,7 +1599,7 @@ PRINT_CURRENT_PIECE:
 	move $s6, $a1
 
 	subi $t0, $s7, OFFSET_INFO_PIECE
-	mul $t1, $a0, 72	# bytes in info matrix
+	mul $t1, $a0, 80	# bytes in info matrix
 	sub $s0, $t0, $t1	# $s0 = fist position in info
 	
 	#({X, Y, Typer, Rotation, [4X4]})
@@ -1369,6 +1623,8 @@ PRINT_CURRENT_PIECE:
 	li $t0, 0x00
 	PRINT_DEFAULT_COLOR:
 	
+	blt $s3, 0, DO_NOT_PRINT_CURRENT_PIECE		# Y < 0
+
 	move $a0, $s2
 	move $a1, $s3
 	move $a2, $t0
