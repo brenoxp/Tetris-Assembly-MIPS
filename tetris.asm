@@ -143,7 +143,7 @@ MAIN:
 	
 	# Save number of users (Default 1)
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
-	li $t1, 2
+	li $t1, 1
 	sw $t1, ($t0)
 
 	# Inicializa a tela
@@ -1035,7 +1035,7 @@ INIT_MAIN_LOOP:
 	jal INIT_USERS_CLOCKS
 	
 	subi $t0, $s7, OFFSET_SPEED_DOWN
-	li $t1, 10
+	li $t1, 1000
 	sw $t1, ($t0)		# save initial difficulty
 	
 	li $s1, 0		# Count amount of users = 0
@@ -1047,25 +1047,22 @@ INIT_MAIN_LOOP:
 	
 	li $a0, 0
 	jal CREATE_PIECE
-
-	li $a0, 1
-	jal CREATE_PIECE
 	
-	li $a0, 0
-	jal CAN_ROTATE_CURRENT_PIECE
+	#li $a0, 0
+	#jal CAN_ROTATE_CURRENT_PIECE
 	
 	MAIN_LOOP:
 	
 	MAIN_LOOP_PLAYER:
 	
 	move $a0, $s1
-	#jal PLAYER_LOOP
+	jal PLAYER_LOOP
 	addi $s1, $s1, 1
 	bne $s1, $s0,  MAIN_LOOP_PLAYER
 	li $s1, 0
 	
 	addi $s2, $s2, 1
-	bne $s2, 1000, MAIN_LOOP
+	bne $s2, 100000000, MAIN_LOOP
 	
 	
 	EXIT_MAIN_LOOP:
@@ -1110,23 +1107,37 @@ PLAYER_LOOP:
 	# keyboard data address 0xff100004
 	# right -> 110
 	# left -> 97
-
-	#la $a0, 0xFF100004
-	#li $v0, 11
-	#syscall
+	# up -> 119
 
 	
+	la $t7, 0xFF100004
+	nop
+	nop
+	nop
+	nop
+	lw $t6, ($t7)
 
-  	
+	bne $t6, 100, PLAYER_DID_NOT_PRESS_RIGHT
   	move $a0, $s2
-	#jal CAN_LEFT_CURRENT_PIECE
-
-	#beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT
-
-	#move $a0, $s2
-	#jal COPY_AUX_PIECE_AND_PRINT
-
+	jal CAN_RIGHT_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT
+	move $a0, $s2
+	jal COPY_AUX_PIECE_AND_PRINT
   	PLAYER_DID_NOT_PRESS_RIGHT:
+
+  	bne $t6, 97, PLAYER_DID_NOT_PRESS_LEFT
+  	move $a0, $s2
+	jal CAN_LEFT_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_LEFT
+	move $a0, $s2
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_LEFT:
+
+
+
+	
+  	li $t6, 0
+  	sw $t6, ($t7)
 
 
 	bne $s1, $t3, PLAYER_DO_NOTHING
@@ -1684,8 +1695,8 @@ CREATE_PIECE:
 	sw $t1, ($t0)		#save initial x
 	
 	subi $t0, $t0, 4
-	#li $t1, -3
-	li $t1, 5
+	li $t1, -3
+	#li $t1, 5
 	sw $t1, ($t0)		#save initial y
 	
 	subi $t0, $t0, 4
@@ -1711,8 +1722,8 @@ CREATE_PIECE:
 	# create line test
 	move $a0, $t0
 	
-	#jal RANDOM
-	li $v0, 0
+	jal RANDOM
+	#li $v0, 1
 
 	bne $v0, 0, NOT_CREATE_PIECE_0
 	jal CREATE_STRAIGHT_POLYMONIO_1
