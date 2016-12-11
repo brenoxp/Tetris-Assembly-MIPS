@@ -12,14 +12,14 @@
 .eqv OFFSET_NUMBER_OF_PLAYERS 	0   		# 000 - 004
 .eqv OFFSET_REGISTERED_KEYS   	4	        # 004 - 068
 .eqv OFFSET_BOARD_POSITIONS   	68 			# 068 - 084
-.eqv OFFSET_MATRICES	      	84			# 084 - 1084
-.eqv OFFSET_SCORES	      		5000		# 5000 - 5016
-.eqv OFFSET_SPEED_DOWN	      	5016		# 5016 - 5020
-.eqv OFFSET_USER_CLOCK	      	5020		# 5020 - 5036
-.eqv OFFSET_TYPE_CURRENT_PIECE 	5036		# 5036 - 5052	
-.eqv OFFSET_INFO_PIECE 			5052		# 5052 - 5372 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
-.eqv OFFSET_INFO_AUX_PIECE 		5372		# 5372 - 5452 ({X, Y, Type, Rotation, [4X4]})
-.eqv OFFSET_OF_NEW_SP         	5452
+.eqv OFFSET_MATRICES	      	84			# 084 - 5084
+.eqv OFFSET_SCORES	      		5084		# 5084 - 5100
+.eqv OFFSET_SPEED_DOWN	      	5100		# 5100 - 5104
+.eqv OFFSET_USER_CLOCK	      	5104		# 5104 - 5120
+.eqv OFFSET_TYPE_CURRENT_PIECE 	5120		# 5120 - 5136
+.eqv OFFSET_INFO_PIECE 			5136		# 5136 - 5456 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
+.eqv OFFSET_INFO_AUX_PIECE 		5456		# 5456 - 5536 ({X, Y, Type, Rotation, [4X4]})
+.eqv OFFSET_OF_NEW_SP         	5536
 
 
 # Info piece type
@@ -920,11 +920,8 @@ INIT_MAIN_LOOP:
 
 	li $a0, 1
 	jal CREATE_PIECE
-
-
 	
 	MAIN_LOOP:
-	
 	
 	MAIN_LOOP_PLAYER:
 	
@@ -935,7 +932,7 @@ INIT_MAIN_LOOP:
 	li $s1, 0
 	
 	addi $s2, $s2, 1
-	bne $s2, 500, MAIN_LOOP
+	bne $s2, 1000, MAIN_LOOP
 	
 	
 	EXIT_MAIN_LOOP:
@@ -986,7 +983,10 @@ PLAYER_LOOP:
 	jal COPY_AUX_PIECE_AND_PRINT
 
 	j DID_DOWN_CURRENT_PIECE
-	CAN_NOT_DOWN_CURRENT_PIECE: # If cant down piece, then create new one
+	CAN_NOT_DOWN_CURRENT_PIECE: # If cant down piece, solid current piece and then create new one
+
+	move $a0, $s2
+	jal SOLID_PIECE
 
 	move $a0, $s2
 	jal CREATE_PIECE
@@ -1012,6 +1012,79 @@ PLAYER_LOOP:
 ########################
 ##   End player Loop  ##
 ########################
+
+##############################
+##      Solid Piece         ##
+##############################
+# $a0 = player
+SOLID_PIECE:
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)	
+	addi $sp, $sp, -4 
+	sw   $s1, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s2, 0($sp)
+
+	subi $t0, $s7, OFFSET_MATRICES
+	mul $t1, $a0, 1000
+	sub $t0, $t0, $t1 			# $t0 = current matrix
+	subi $t0, $t0, 160
+
+	subi $t1, $s7, OFFSET_INFO_PIECE
+	mul $t2, $a0, 80
+	sub $t1, $t1, $t2 			# $t1 = current piece
+
+	lw $t2, ($t1)				# $t2 = current piece X
+	subi $t1, $t1, 4			
+	lw $t3, ($t1)				# $t3 = current piece Y
+
+	addi $t4, $t2, 4			# $t4 = Max X
+
+	#({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
+
+	subi $t1, $t1, 12
+
+	li $t6, 0					# $t6 = count
+
+	SOLID_PIECE_LOOP:
+
+	lw $t5, ($t1)					# $t5 = load color
+	subi $t1, $t1, 4
+	
+	beq $t5, 0x00, NOT_SOLID_PIECE
+
+	# copy
+	
+	mul $s0, $t3, 10
+	add $s0, $s0, $t2
+	mul $s0, $s0, 4
+
+	sub $s0, $t0, $s0
+	sw $t5, ($s0)
+
+
+	NOT_SOLID_PIECE:
+
+	addi $t2, $t2, 1
+	bne $t2, $t4, SOLID_PIECE_LOOP_NOT_UPDATE_Y
+	subi $t2, $t2, 4
+	addi $t3, $t3, 1
+	SOLID_PIECE_LOOP_NOT_UPDATE_Y:
+
+	addi $t6, $t6, 1
+	bne $t6, 16, SOLID_PIECE_LOOP
+
+	lw   $s2, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s1, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+##############################
+##   End Solid Piece        ##
+##############################
+
 
 ##############################
 ##  Can down current Piece  ##
@@ -1170,7 +1243,6 @@ AUX_PIECE_CAN_MOVE:
 
 	lw $t0, ($s2)
 	beq $t0, 0x00, AUX_PIECE_CAN_MOVE_CONTINUE
-
 
 	move $a0, $s5
 	move $a1, $s0	# X
@@ -1337,8 +1409,8 @@ CREATE_PIECE:
 	# create line test
 	move $a0, $t0
 	
-	#jal RANDOM
-	li $v0, 1
+	jal RANDOM
+	#li $v0, 4 
 	
 	bne $v0, 0, NOT_CREATE_PIECE_0
 	jal CREATE_STRAIGHT_POLYMONIO
@@ -1704,8 +1776,13 @@ INIT_USERS_CLOCKS:
 ########################################		
 	
 #utilizando LCG (a = 5, c = 1, m = 16, x0 = SEED)		
-RANDOM: la $t0, SEED
+RANDOM: 
+
+	la $t0, SEED
 	lw $t1, 0($t0) 		#carrega em t1 o valor do seed		
+	subi $t1, $s7, OFFSET_USER_CLOCK
+	lw $t1, ($t1)
+
 	li $t2, 5		
 	mult $t1, $t2		#a*Xn		
 	mflo $t1		
