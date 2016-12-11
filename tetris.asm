@@ -922,13 +922,17 @@ INIT_MAIN_LOOP:
 	jal CREATE_PIECE
 
 	
+	li $a0, 0
+	jal CAN_ROTATE_CURRENT_PIECE
+
+
 	
 	MAIN_LOOP:
 	
 	MAIN_LOOP_PLAYER:
 	
 	move $a0, $s1
-	jal PLAYER_LOOP
+	#jal PLAYER_LOOP
 	addi $s1, $s1, 1
 	bne $s1, $s0,  MAIN_LOOP_PLAYER
 	li $s1, 0
@@ -990,10 +994,10 @@ PLAYER_LOOP:
   	move $a0, $s2
 	#jal CAN_LEFT_CURRENT_PIECE
 
-	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT
+	#beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT
 
-	move $a0, $s2
-	jal COPY_AUX_PIECE_AND_PRINT
+	#move $a0, $s2
+	#jal COPY_AUX_PIECE_AND_PRINT
 
   	PLAYER_DID_NOT_PRESS_RIGHT:
 
@@ -1109,6 +1113,82 @@ SOLID_PIECE:
 ##############################
 ##   End Solid Piece        ##
 ##############################
+
+#################################
+##  Can rotate current Piece   ##
+#################################
+# $a0 = player
+# $v0 = (can_rotate) ? 1 : 0
+CAN_ROTATE_CURRENT_PIECE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+
+	move $s0, $a0
+	jal COPY_CURRENT_PIECE
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+
+	#({X, Y, Type, Rotation, [4X4]})
+	subi $a0, $t1, 8 	# $t1 = Type
+
+	lw $a0, ($a0)
+
+	li $v0, 1
+	syscall
+
+	bne $a0, 0, ROTATE_NOT_STRAIGHT
+
+	ROTATE_NOT_STRAIGHT:
+	bne $a0, 1, ROTATE_NOT_SQUARE
+
+	ROTATE_NOT_SQUARE:
+	bne $a0, 2, ROTATE_NOT_T
+
+	ROTATE_NOT_T:
+	bne $a0, 3, ROTATE_NOT_J
+	jal ROTATE_J
+	ROTATE_NOT_J:
+	bne $a0, 4, ROTATE_NOT_L
+
+	ROTATE_NOT_L:
+	bne $a0, 5, ROTATE_NOT_S
+
+	ROTATE_NOT_S:
+	bne $a0, 6, ROTATE_NOT_Z
+
+	ROTATE_NOT_Z:
+	
+
+	# $a0 = player
+	# $v0 = (can_move) ? 1 : 0
+	move $a0, $s0
+	jal AUX_PIECE_CAN_MOVE
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+##################################
+## End can rotate current Piece ##
+##################################
+
+
+##############
+## Rotate J ##
+##############
+ROTATE_J:
+
+	
+
+
+	jr $ra
+##############
+## Rotate J ##
+##############
+
 
 
 ##############################
@@ -1483,11 +1563,12 @@ CREATE_PIECE:
 	sw $t1, ($t0)		#save initial x
 	
 	subi $t0, $t0, 4
-	li $t1, -3
+	#li $t1, -3
+	li $t1, 5
 	sw $t1, ($t0)		#save initial y
 	
 	subi $t0, $t0, 4
-	move $a1, $t1		 # Send address of Type to bem saved
+	move $a1, $t0		 # Send address of Type to be saved
 	
 	subi $t0, $t0, 4
 	li $t1, 0
@@ -1509,39 +1590,38 @@ CREATE_PIECE:
 	# create line test
 	move $a0, $t0
 	
-	jal RANDOM
-	#li $v0, 4 
-	
+	#jal RANDOM
+	li $v0, 0
+
 	bne $v0, 0, NOT_CREATE_PIECE_0
-	jal CREATE_STRAIGHT_POLYMONIO
+	jal CREATE_STRAIGHT_POLYMONIO_1
 	NOT_CREATE_PIECE_0:
 
 	bne $v0, 1, NOT_CREATE_PIECE_1
-	jal CREATE_SQUARE_POLYMONIO
+	jal CREATE_SQUARE_POLYMONIO_0
 	NOT_CREATE_PIECE_1:
 
 	bne $v0, 2, NOT_CREATE_PIECE_2
-	jal CREATE_T_POLYMONIO
+	jal CREATE_T_POLYMONIO_0
 	NOT_CREATE_PIECE_2:
 
 	bne $v0, 3, NOT_CREATE_PIECE_3
-	jal CREATE_J_POLYMONIO
+	jal CREATE_J_POLYMONIO_0
 	NOT_CREATE_PIECE_3:
 
 	bne $v0, 4, NOT_CREATE_PIECE_4
-	jal CREATE_L_POLYMONIO
+	jal CREATE_L_POLYMONIO_0
 	NOT_CREATE_PIECE_4:
 
 	bne $v0, 5, NOT_CREATE_PIECE_5
-	jal CREATE_S_POLYMONIO
+	jal CREATE_S_POLYMONIO_0
 	NOT_CREATE_PIECE_5:
 
 	bne $v0, 6, NOT_CREATE_PIECE_6
-	jal CREATE_Z_POLYMONIO
+	jal CREATE_Z_POLYMONIO_0
 	NOT_CREATE_PIECE_6:
 		
 	move $a0, $s0
-	li $a1, 0
 	jal PRINT_CURRENT_PIECE
 
 
@@ -1559,7 +1639,7 @@ CREATE_PIECE:
 #####################################
 # $a0 = Start matrix memory position
 # $a1 = Type adress
-CREATE_STRAIGHT_POLYMONIO:
+CREATE_STRAIGHT_POLYMONIO_0:
 	move $t0, $a0
 	
 	li $t1, 0
@@ -1581,12 +1661,43 @@ CREATE_STRAIGHT_POLYMONIO:
 ##    End create Straight Polyomino    ##
 #########################################
 
+
+#####################################
+##    Create Straight Polyomino    ##
+#####################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_STRAIGHT_POLYMONIO_1:
+	move $t0, $a0
+	
+	li $t1, 0
+	sw $t1, ($a1)
+	
+	li $t3, 0xAA	# piece color
+	
+	subi $t0, $t0, 48
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################
+##    End create Straight Polyomino    ##
+#########################################
+
+
+
+
 #####################################
 ##    Create Square  Polyomino     ##
 #####################################
 # $a0 = Start matrix memory position
 # $a1 = Type adress
-CREATE_SQUARE_POLYMONIO:
+CREATE_SQUARE_POLYMONIO_0:
 	move $t0, $a0
 	
 	li $t1, 1
@@ -1608,13 +1719,23 @@ CREATE_SQUARE_POLYMONIO:
 ##    End create Square Polyomino      ##
 #########################################
 
+#####################################
+##    Clear info matrix            ##
+#####################################
+# $a0 = begin matrix
+	
+
+	jr $ra
+#####################################
+##   End clear info matrix         ##
+#####################################
 
 #####################################
 ##    Create T Polyomino           ##
 #####################################
 # $a0 = Start matrix memory position
 # $a1 = Type adress
-CREATE_T_POLYMONIO:
+CREATE_T_POLYMONIO_0:
 	move $t0, $a0
 	
 	li $t1, 2
@@ -1641,7 +1762,7 @@ CREATE_T_POLYMONIO:
 #####################################
 # $a0 = Start matrix memory position
 # $a1 = Type adress
-CREATE_J_POLYMONIO:
+CREATE_J_POLYMONIO_0:
 	move $t0, $a0
 	
 	li $t1, 3
@@ -1663,12 +1784,13 @@ CREATE_J_POLYMONIO:
 ##    End J Square Polyomino           ##
 #########################################
 
+
 #####################################
 ##    Create L Polyomino           ##
 #####################################
 # $a0 = Start matrix memory position
 # $a1 = Type adress
-CREATE_L_POLYMONIO:
+CREATE_L_POLYMONIO_0:
 	move $t0, $a0
 	
 	li $t1, 4
@@ -1695,7 +1817,7 @@ CREATE_L_POLYMONIO:
 #####################################
 # $a0 = Start matrix memory position
 # $a1 = Type adress
-CREATE_S_POLYMONIO:
+CREATE_S_POLYMONIO_0:
 	move $t0, $a0
 	
 	li $t1, 5
@@ -1722,7 +1844,7 @@ CREATE_S_POLYMONIO:
 #####################################
 # $a0 = Start matrix memory position
 # $a1 = Type adress
-CREATE_Z_POLYMONIO:
+CREATE_Z_POLYMONIO_0:
 	move $t0, $a0
 	
 	li $t1, 6
