@@ -63,7 +63,6 @@
 #########################################################################################################
 
 .eqv OFFSET_NUMBER_OF_PLAYERS 	0   		# 000 - 004
-.eqv OFFSET_REGISTERED_KEYS   	4	        # 004 - 068
 .eqv OFFSET_BOARD_POSITIONS   	68 		# 068 - 084
 .eqv OFFSET_MATRICES	      	84		# 084 - 5084
 .eqv OFFSET_SCORES	      	5084		# 5084 - 5100
@@ -72,7 +71,8 @@
 .eqv OFFSET_TYPE_CURRENT_PIECE 	5120		# 5120 - 5136
 .eqv OFFSET_INFO_PIECE 		5136		# 5136 - 5456 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
 .eqv OFFSET_INFO_AUX_PIECE 	5456		# 5456 - 5536 ({X, Y, Type, Rotation, [4X4]})
-.eqv OFFSET_OF_NEW_SP         	5536
+.eqv OFFSET_REGISTERED_KEYS   	5536	        # 5536 - 5600
+.eqv OFFSET_OF_NEW_SP         	5600
 
 #########################################################################################################
 ##                                       PIECE TYPE                                                    ##
@@ -136,16 +136,16 @@ MAIN:
 	# Update $sp to its new offset
 	subi $sp, $sp, OFFSET_OF_NEW_SP
 
-	# Configura os controles escolhidos se for IrDA
-	#li $s1, 1
-	#jal CONTROL_CONFIG
-
-
 	# Save number of users (Default 1)
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	li $t1, 1
 	sw $t1, ($t0)
-
+	
+	# Configura os controles escolhidos se for IrDA
+	li $s1, 0
+	li $s2, 1 # indica que esta acontecendo antes da escolha dos jogadores
+	jal CONTROL_CONFIG
+	
 	# Inicializa a tela
 	la $t0, VGA
 	li $t1, TAMX
@@ -162,6 +162,11 @@ MAIN:
 	li $a0, 0x00
 	li $v0, 48
 	syscall
+	
+	# Configura os controles escolhidos se for IrDA
+	li $s1, 0
+	li $s2, 0 # indica que esta acontecendo depois da escolha dos jogadores
+	jal CONTROL_CONFIG
 
 	jal INIT_MAIN_LOOP
 
@@ -454,16 +459,12 @@ PRESS_MENU_NOTHING:
 ##                                       CONTROL CONFIG                                                ##
 #########################################################################################################
 # Configures the IrDA keys based on the number of players
-CONTROL_CONFIG:
+CONTROL_CONFIG: 
+	beq $s2, 1, OUT_CONTROL
+
 	# savers $ra
 	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4
-	sw   $s0, 0($sp)
-	addi $sp, $sp, -4
-	sw   $s5, 0($sp)
-	addi $sp, $sp, -4
-	sw   $s6, 0($sp)
 
 	# Load number of users
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
@@ -541,35 +542,28 @@ CONTROL_CONFIG:
 	syscall
 	jal GET_KEY
 	subi $s5, $s5, -4
-
-	beq $s0, $t3, END_IRDA
+	
+	beq $s0, $t3, END_CONFIG_KEYS
 	addi $t3, $t3, 1
 	j LOOP_CONTROL
 
 	# Get key = 0 - Teclado
 	# Get key = 1 - IrDA
 	GET_KEY:
-	move $t9, $zero
-	beq $s1, $t9, TECLADO_GET_KEY
-	addi $t9, $t9, 1
-	beq $s1, $t9, IRDA_GET_KEY
-
+ 
+	move $t7, $zero
+	beq $s1, $t7, TECLADO_GET_KEY
+	addi $t7, $t7, 1
+	beq $s1, $t7, IRDA_GET_KEY
+	
 	# Read character and saves ASCII code
 	TECLADO_GET_KEY:
 	li $v0, 12
 	syscall
 
 	# saves value
-	sw $v0, ($s5)
-
-	sw   $s6, 0($sp)
-	addi $sp, $sp, 4
-	lw   $s5, 0($sp)
-	addi $sp, $sp, 4
-	lw   $s0, 0($sp)
-	addi $sp, $sp, 4
-	lw   $ra, 0($sp)
-	addi $sp, $sp, 4
+	sw $v0, ($s5) 
+OUT_CONTROL: 
 	jr $ra
 
 # Keeps IrDA on loop until it reads something from the receiver addres
@@ -585,8 +579,13 @@ IRDA_GET_KEY:
 	move $v1, $zero
 	jr $ra
 
-END_IRDA:
-	lw   $ra, 0($sp)
+END_CONFIG_KEYS:
+	# Limpa a tela 
+	li $v0, 48
+	li $a0, 0x0000
+	syscall
+	lw   $ra, 0($sp) 
+
 	addi $sp, $sp, 4
 	jr $ra
 #########################################################################################################
@@ -946,6 +945,7 @@ PRINT_BOARD:
 ##                                      END PRINT BOARD 		                               ##
 #########################################################################################################
 
+
 #########################################################################################################
 ##                                       INIT SCORE		                                       ##
 #########################################################################################################
@@ -956,12 +956,36 @@ INIT_SCORE:
 	li $t0, 0
 	subi $t1, $s7, OFFSET_SCORES
 	sw $t0, ($t1)
-	subi $t1, $t1, 4
+	subi $t1, $t1, -4
 	sw $t0, ($t1)
-	subi $t1, $t1, 4
+	subi $t1, $t1, -4
 	sw $t0, ($t1)
-	subi $t1, $t1, 4
+	subi $t1, $t1, -4
 	sw $t0, ($t1)
+	
+	subi $t7, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t7, ($t7)
+	
+	li $a0, 1
+	li $a1, 0
+	jal UPDATE_SCORE
+	beq $t7, 1, END_INIT
+	
+	li $a0, 2
+	li $a1, 0
+	jal UPDATE_SCORE
+	beq $t7, 2, END_INIT
+	
+	li $a0, 3
+	li $a1, 0
+	jal UPDATE_SCORE
+	beq $t7, 3, END_INIT
+	
+	li $a0, 4
+	li $a1, 0
+	jal UPDATE_SCORE
+	
+END_INIT:
 
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
@@ -979,27 +1003,85 @@ INIT_SCORE:
 UPDATE_SCORE:
 	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-
-	move $t2, $a1
-
+  
+	move $t5, $a1
+	move $t6, $a0
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	subi $t7, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t7, ($t7)
+	
+	beq $t7, 1, UPDATE_1
+	beq $t7, 2, UPDATE_2
+	beq $t7, 3, UPDATE_3
+	beq $t7, 4, UPDATE_4
+# 1 PLAYER, atualiza player 1
+UPDATE_1:
 
-	mul $t1, $a0, 4
-	sub $t0, $t0, $t1
 	lw $a1, ($t0)		# $a1 = X Position to print
 	addi $a1, $a1, 8
 
 	subi $t0, $s7, OFFSET_SCORES
-	sub $t0, $t0, $t1
-	lw $a0, ($t0)		# $a0 = Value to print
 
-	add $a0, $a0, $t2
+	lw $a0, ($t0)
+	add $a0, $a0, $t5
 	sw $a0, ($t0)
+	jal PRINT_UPDATE
+	j END_UPDATE
+
+# 2 players jogando, tem que saber qual deve atualizar
+UPDATE_2:
+
+	beq $t6, 1, UPDATE_1
+
+	lw $a1, -4($t0)
+	addi $a1, $a1, 8
+	
+	subi $t0, $s7, OFFSET_SCORES
+	lw $a0, -4($t0)
+	add $a0, $a0, $t5
+	sw $a0, ($t0)
+	jal PRINT_UPDATE
+	j END_UPDATE
+	
+UPDATE_3:
+	beq $t6, 1, UPDATE_1
+	beq $t6, 2, UPDATE_2 
+	
+	lw $a1, -8($t0)
+	addi $a1, $a1, 8
+	
+	subi $t0, $s7, OFFSET_SCORES
+	lw $a0, -8($t0)
+	add $a0, $a0, $t5
+	sw $a0, ($t0) 
+	jal PRINT_UPDATE
+	j END_UPDATE
+	
+UPDATE_4:
+
+	beq $t6, 1, UPDATE_1
+	beq $t6, 2, UPDATE_2
+	beq $t6, 3, UPDATE_3
+	
+	lw $a1,-12($t0)
+	addi $a1, $a1, 8
+	
+	subi $t0, $s7, OFFSET_SCORES
+	lw $a0, -12($t0)
+	add $a0, $a0, $t5
+	sw $a0, ($t0) 
+	jal PRINT_UPDATE
+	j END_UPDATE
+
+PRINT_UPDATE:
 
 	li $v0, 101
 	li $a2, 200
-	li $a3, 0xFF
+	li $a3, 0xBB
 	syscall
+	jr $ra
+	
+END_UPDATE: 
 
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
