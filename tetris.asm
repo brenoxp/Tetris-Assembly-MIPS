@@ -1224,6 +1224,14 @@ PLAYER_LOOP:
 	jal COPY_AUX_PIECE_AND_PRINT
   	PLAYER_DID_NOT_PRESS_LEFT:
 
+  	bne $t6, 119, PLAYER_DID_NOT_PRESS_UP
+  	move $a0, $s2
+	jal CAN_ROTATE_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_UP
+	move $a0, $s2
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_UP:
+
   	li $t6, 0
   	sw $t6, ($t7)
 
@@ -1397,6 +1405,12 @@ DOWN_LINES:
 
 	DOWN_LINES_NOT_UPDATE_Y:
 	bgt $s4, 0, DOWN_LINES_LOOP
+
+
+	move $a0, $s0
+	li $a1, 1
+	jal UPDATE_SCORE
+
 	
 	lw   $s4, 0($sp)
 	addi $sp, $sp, 4
@@ -1504,31 +1518,44 @@ CAN_ROTATE_CURRENT_PIECE:
 
 	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
 
+	subi $a0, $t1, 16		# matrix
+	jal CLEAR_MATRIX_16
+
+
 	#({X, Y, Type, Rotation, [4X4]})
 	subi $a0, $t1, 8 	# $t1 = Type
+	lw $a0, ($a0)
+
+	li $v0, 1
+	syscall
 
 	bne $a0, 0, ROTATE_NOT_STRAIGHT
-
+	jal ROTATE_STRAIGHT
 	ROTATE_NOT_STRAIGHT:
+
 	bne $a0, 1, ROTATE_NOT_SQUARE
-
+	#jal ROTATE_SQUARE
 	ROTATE_NOT_SQUARE:
+
 	bne $a0, 2, ROTATE_NOT_T
-
+	jal ROTATE_T
 	ROTATE_NOT_T:
+
 	bne $a0, 3, ROTATE_NOT_J
-	jal ROTATE_J
+	#jal ROTATE_J
 	ROTATE_NOT_J:
+
 	bne $a0, 4, ROTATE_NOT_L
-
+	#jal ROTATE_L
 	ROTATE_NOT_L:
+
 	bne $a0, 5, ROTATE_NOT_S
-
+	#jal ROTATE_S
 	ROTATE_NOT_S:
+
 	bne $a0, 6, ROTATE_NOT_Z
-
+	#jal ROTATE_Z
 	ROTATE_NOT_Z:
-
 
 	# $a0 = player
 	# $v0 = (can_move) ? 1 : 0
@@ -1543,6 +1570,129 @@ CAN_ROTATE_CURRENT_PIECE:
 ##################################
 ## End can rotate current Piece ##
 ##################################
+
+
+#########################################################################################################
+##                                CLEAR MATRIX 16 	 		                                           ##
+#########################################################################################################
+# $a0 = init matrix
+CLEAR_MATRIX_16:
+	#clear matrix (16 positions)
+	move $t1, $a0
+	li $t2, 64
+	sub $t2, $t1, $t2
+
+	CLEAR_MATRIX_16_LOOP:
+	li $t3, 0x00
+	sw $t3, ($t1)
+	subi $t1, $t1, 4
+	bne $t1, $t2 CLEAR_MATRIX_16_LOOP
+
+	jr $ra
+#########################################################################################################
+##                               END CLEAR MATRIX 16 	 		                                       ##
+#########################################################################################################
+
+#########################################################################################################
+##                                 ROTATE STRAIGHT 		                                              ##
+#########################################################################################################
+ROTATE_STRAIGHT:
+	addi $sp, $sp, -4
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+	subi $a0, $t1, 16		# matrix
+ 	subi $a1, $t1, 8	 	#type address
+
+	subi $t0, $t1, 12
+	lw $t2, ($t0)
+
+	beq $t2, 0, ROTATE_STRAIGHT_R1
+	li $t2, 0
+	sw $t2, ($t0)
+	jal CREATE_STRAIGHT_POLYMONIO_0
+ 	j ROTATE_STRAIGHT_EXIT
+	ROTATE_STRAIGHT_R1:
+	li $t2, 1
+	sw $t2, ($t0)
+	jal CREATE_STRAIGHT_POLYMONIO_1
+ 	j ROTATE_STRAIGHT_EXIT
+
+	ROTATE_STRAIGHT_EXIT:
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                END ROTATE STRAIGHT 		                                           ##
+#########################################################################################################
+
+
+#########################################################################################################
+##                                 ROTATE T 		                                              ##
+#########################################################################################################
+ROTATE_T:
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+# 0 -> 3
+
+	addi $sp, $sp, -4
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+	subi $a0, $t1, 16		# matrix
+ 	subi $a1, $t1, 8	 	#type address
+
+	subi $t0, $t1, 12
+	lw $t2, ($t0)
+
+	ROTATE_T_R4:
+	bne $t2, 0, ROTATE_T_R1
+	li $t2, 1
+	sw $t2, ($t0)
+	jal CREATE_T_POLYMONIO_0
+ 	j ROTATE_T_EXIT
+ 	
+ 	ROTATE_T_R1:
+ 	bne $t2, 1, ROTATE_T_R2
+	li $t2, 2
+	sw $t2, ($t0)
+	jal CREATE_T_POLYMONIO_1
+ 	j ROTATE_T_EXIT
+
+
+ 	ROTATE_T_R2:
+ 	bne $t2, 2, ROTATE_T_R3
+	li $t2, 3
+	sw $t2, ($t0)
+	jal CREATE_T_POLYMONIO_2
+ 	j ROTATE_T_EXIT
+
+ 	ROTATE_T_R3:
+ 	bne $t2, 3, ROTATE_T_R4
+	li $t2, 0
+	sw $t2, ($t0)
+	jal CREATE_T_POLYMONIO_3
+ 	j ROTATE_T_EXIT
+
+	ROTATE_T_EXIT:
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                END ROTATE T 		                                           ##
+#########################################################################################################
 
 
 ##############
@@ -1919,9 +2069,13 @@ CREATE_PIECE:
 	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
 
+	#{X, Y, Type, Rotation, [4X4]}
+
 	move $s0, $a0	#$save $a0 in $s0
 
 	subi $t0, $s7, OFFSET_INFO_PIECE
+	subi $a1, $t0, 8
+
 	mul $t1, $s0, 80	# bytes in info matrix
 	sub $t0, $t0, $t1
 
@@ -1934,7 +2088,6 @@ CREATE_PIECE:
 	sw $t1, ($t0)		#save initial y
 
 	subi $t0, $t0, 4
-	move $a1, $t0		 # Send address of Type to be saved
 
 	subi $t0, $t0, 4
 	li $t1, 0
@@ -1957,10 +2110,10 @@ CREATE_PIECE:
 	move $a0, $t0
 
 	#jal RANDOM
-	li $v0, 1
+	li $v0, 2
 
 	bne $v0, 0, NOT_CREATE_PIECE_0
-	jal CREATE_STRAIGHT_POLYMONIO_1
+	jal CREATE_STRAIGHT_POLYMONIO_0
 	NOT_CREATE_PIECE_0:
 
 	bne $v0, 1, NOT_CREATE_PIECE_1
@@ -2038,7 +2191,7 @@ CREATE_STRAIGHT_POLYMONIO_1:
 
 	li $t3, 0xAA	# piece color
 
-	subi $t0, $t0, 48
+	subi $t0, $t0, 32
 	sw $t3, ($t0)
 	subi $t0, $t0, 4
 	sw $t3, ($t0)
@@ -2048,7 +2201,6 @@ CREATE_STRAIGHT_POLYMONIO_1:
 	sw $t3, ($t0)
 
 	jr $ra
-
 
 #########################################################################################################
 ##                                    END CREATE STRAIGHT POLYOMINO	                                   ##
