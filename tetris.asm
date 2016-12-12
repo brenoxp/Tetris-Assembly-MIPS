@@ -69,10 +69,11 @@
 .eqv OFFSET_SPEED_DOWN	      	5100		# 5100 - 5104
 .eqv OFFSET_USER_CLOCK	      	5104		# 5104 - 5120
 .eqv OFFSET_TYPE_CURRENT_PIECE 	5120		# 5120 - 5136
-.eqv OFFSET_INFO_PIECE 		5136		# 5136 - 5456 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
-.eqv OFFSET_INFO_AUX_PIECE 	5456		# 5456 - 5536 ({X, Y, Type, Rotation, [4X4]})
-.eqv OFFSET_REGISTERED_KEYS   	5536	        # 5536 - 5600
-.eqv OFFSET_OF_NEW_SP         	5600
+.eqv OFFSET_INFO_PIECE 		5236		# 5136 - 5456 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
+.eqv OFFSET_INFO_AUX_PIECE 	5556		# 5456 - 5536 ({X, Y, Type, Rotation, [4X4]})
+.eqv OFFSET_REGISTERED_KEYS   	5636	        # 5536 - 5600
+.eqv OFFSET_PLAYER_ALIVE         5700		# 5700 - 5716
+.eqv OFFSET_OF_NEW_SP         	5716
 
 #########################################################################################################
 ##                                       PIECE TYPE                                                    ##
@@ -863,7 +864,6 @@ PRINT_BOARDS:
 	addi $sp, $sp, -4
 	sw   $s1, 0($sp)
 
-
 	subi $s0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $s0, ($s0)
 	li $s1, 0
@@ -875,11 +875,6 @@ PRINT_BOARDS:
 
 	addi $s1, $s1, 1
 	bne $s1, $s0, LOOP_PRINT_BOARDS
-
-
-
-
-
 
 	lw   $s1, 0($sp)
 	addi $sp, $sp, 4
@@ -1099,6 +1094,27 @@ END_UPDATE:
 ##                                     END UPDATE SCORE                                                ##
 #########################################################################################################
 
+#########################################################################################################
+##                                     INIT PLAYERS ALIVE                                              ##
+#########################################################################################################
+INIT_PLAYES_ALIVE:
+
+	subi $t0, $s7, OFFSET_PLAYER_ALIVE
+
+	li $t1, 1
+	
+	sw $t1, ($t0)
+	subi $t0, $t0, 4
+	sw $t1, ($t0)
+	subi $t0, $t0, 4
+	sw $t1, ($t0)
+	subi $t0, $t0, 4
+	sw $t1, ($t0)
+
+	jr $ra
+#########################################################################################################
+##                                   END INIT PLAYERS ALIVE                                            ##
+#########################################################################################################
 
 #########################################################################################################
 ##                                       MAIN LOOP		                                       ##
@@ -1124,6 +1140,10 @@ INIT_MAIN_LOOP:
 	jal INIT_SCORE
 
 	jal INIT_USERS_CLOCKS
+
+	jal INIT_PLAYES_ALIVE
+
+	jal INIT_PLAYERS_PIECES
 
 	subi $t0, $s7, OFFSET_SPEED_DOWN
 	li $t1, 1000
@@ -1171,6 +1191,39 @@ INIT_MAIN_LOOP:
 #########################################################################################################
 
 #########################################################################################################
+##                                     INIT PLAYERS PIECES    	                                       ##
+#########################################################################################################
+INIT_PLAYERS_PIECES:
+	addi $sp, $sp, -4
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)	
+	addi $sp, $sp, -4
+	sw   $s1, 0($sp)	
+
+	subi $s0, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $s0, ($s0)
+
+	li $s1, 0
+
+	INIT_PLAYERS_PIECES_LOOP:
+	move $a0, $s1
+	jal CREATE_PIECE
+	addi $s1, $s1, 1
+	bne $s1, $s0, INIT_PLAYERS_PIECES_LOOP
+
+	lw   $s1, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                   END INIT PLAYERS PIECES                                          ##
+#########################################################################################################
+
+#########################################################################################################
 ##                                     PLAYER LOOP      	                                       ##
 #########################################################################################################
 # $a0 = Current Player
@@ -1185,6 +1238,14 @@ PLAYER_LOOP:
 	sw   $s2, 0($sp)
 
 	move $s2, $a0
+
+	subi $t0, $s7, OFFSET_PLAYER_ALIVE
+	mul $t1, $a0, 4
+	sub $t0, $t0, $t1
+
+	lw $t0, ($t0)
+	beq $t0, 0, PLAYER_LOOP_EXIT
+
 
 	subi $s0, $s7, OFFSET_USER_CLOCK	# $t0 = offset user clock
 	mul $a0, $a0, 4
@@ -1235,7 +1296,7 @@ PLAYER_LOOP:
   	li $t6, 0
   	sw $t6, ($t7)
 
-	bne $s1, $t3, PLAYER_DO_NOTHING
+	bgt $s1, $t3, PLAYER_DO_NOTHING
 	# down trigger
 	move $a0, $s2
 	jal CAN_DOWN_CURRENT_PIECE
@@ -1253,11 +1314,6 @@ PLAYER_LOOP:
 	REPEAT_COMPLETE_LINE:
 	move $a0, $s2
 	jal UPDATE_IF_COMPLETED_LINE
-	move $t9, $v0
-	move $a0 $v0
-	li $v0, 1
-	syscall
-	move $v0, $t9
 	bne $v0, -1, REPEAT_COMPLETE_LINE
 
 	move $a0, $s2
@@ -1271,6 +1327,8 @@ PLAYER_LOOP:
 
 	addi $s1, $s1, 1					# User_clock++
 	sw $s1, ($s0)
+
+	PLAYER_LOOP_EXIT:
 
 	lw   $s2, 0($sp)
 	addi $sp, $sp, 4
@@ -1479,6 +1537,22 @@ SOLID_PIECE:
 	sub $s0, $t0, $s0
 	sw $t5, ($s0)
 
+	bge $t3, 0, AUX_PIECE_NOT_KILL_PLAYER  # Y >= 0
+	subi $t6, $s7, OFFSET_PLAYER_ALIVE
+	mul $t7, $a0, 4
+	sub $t6, $t6, $t7
+
+	li $t7, 0
+	sw $t7, ($t6)
+
+	li $a0, 9
+	li $v0, 1
+	syscall
+
+
+	j SOLID_PIECE_EXIT
+	AUX_PIECE_NOT_KILL_PLAYER:
+
 
 	NOT_SOLID_PIECE:
 
@@ -1486,10 +1560,14 @@ SOLID_PIECE:
 	bne $t2, $t4, SOLID_PIECE_LOOP_NOT_UPDATE_Y
 	subi $t2, $t2, 4
 	addi $t3, $t3, 1
+
+
 	SOLID_PIECE_LOOP_NOT_UPDATE_Y:
 
 	addi $t6, $t6, 1
 	bne $t6, 16, SOLID_PIECE_LOOP
+
+	SOLID_PIECE_EXIT:
 
 	lw   $s2, 0($sp)
 	addi $sp, $sp, 4
@@ -1516,18 +1594,17 @@ CAN_ROTATE_CURRENT_PIECE:
 	move $s0, $a0
 	jal COPY_CURRENT_PIECE
 
+
 	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
 
-	subi $a0, $t1, 16		# matrix
+	subi $a0, $t1, 16		# matrix0
 	jal CLEAR_MATRIX_16
 
-
 	#({X, Y, Type, Rotation, [4X4]})
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
 	subi $a0, $t1, 8 	# $t1 = Type
 	lw $a0, ($a0)
-
-	li $v0, 1
-	syscall
 
 	bne $a0, 0, ROTATE_NOT_STRAIGHT
 	jal ROTATE_STRAIGHT
@@ -1542,11 +1619,11 @@ CAN_ROTATE_CURRENT_PIECE:
 	ROTATE_NOT_T:
 
 	bne $a0, 3, ROTATE_NOT_J
-	#jal ROTATE_J
+	jal ROTATE_J
 	ROTATE_NOT_J:
 
 	bne $a0, 4, ROTATE_NOT_L
-	#jal ROTATE_L
+	jal ROTATE_L
 	ROTATE_NOT_L:
 
 	bne $a0, 5, ROTATE_NOT_S
@@ -1579,8 +1656,7 @@ CAN_ROTATE_CURRENT_PIECE:
 CLEAR_MATRIX_16:
 	#clear matrix (16 positions)
 	move $t1, $a0
-	li $t2, 64
-	sub $t2, $t1, $t2
+	subi $t2, $t1, 64
 
 	CLEAR_MATRIX_16_LOOP:
 	li $t3, 0x00
@@ -1631,6 +1707,7 @@ ROTATE_STRAIGHT:
 #########################################################################################################
 ##                                END ROTATE STRAIGHT 		                                           ##
 #########################################################################################################
+
 
 
 #########################################################################################################
@@ -1695,12 +1772,129 @@ ROTATE_T:
 #########################################################################################################
 
 
-##############
-## Rotate J ##
-##############
+#########################################################################################################
+##                                 ROTATE L 		                                              ##
+#########################################################################################################
+ROTATE_L:
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+# 0 -> 3
+
+	addi $sp, $sp, -4
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+	subi $a0, $t1, 16		# matrix
+ 	subi $a1, $t1, 8	 	#type address
+
+	subi $t0, $t1, 12
+	lw $t2, ($t0)
+
+	ROTATE_L_R4:
+	bne $t2, 0, ROTATE_L_R1
+	li $t2, 1
+	sw $t2, ($t0)
+	jal CREATE_L_POLYMONIO_0
+ 	j ROTATE_T_EXIT
+ 	
+ 	ROTATE_L_R1:
+ 	bne $t2, 1, ROTATE_L_R2
+	li $t2, 2
+	sw $t2, ($t0)
+	jal CREATE_L_POLYMONIO_1
+ 	j ROTATE_L_EXIT
+
+
+ 	ROTATE_L_R2:
+ 	bne $t2, 2, ROTATE_L_R3
+	li $t2, 3
+	sw $t2, ($t0)
+	jal CREATE_L_POLYMONIO_2
+ 	j ROTATE_L_EXIT
+
+ 	ROTATE_L_R3:
+ 	bne $t2, 3, ROTATE_L_R4
+	li $t2, 0
+	sw $t2, ($t0)
+	jal CREATE_L_POLYMONIO_3
+ 	j ROTATE_L_EXIT
+
+	ROTATE_L_EXIT:
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                END ROTATE T 		                                           ##
+#########################################################################################################
+
+
+
+#########################################################################################################
+##                                 ROTATE J		                                              ##
+#########################################################################################################
 ROTATE_J:
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+# 0 -> 3
+
+	addi $sp, $sp, -4
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+	subi $a0, $t1, 16		# matrix
+ 	subi $a1, $t1, 8	 	#type address
+
+	subi $t0, $t1, 12
+	lw $t2, ($t0)
+
+	ROTATE_J_R4:
+	bne $t2, 0, ROTATE_J_R1
+	li $t2, 1
+	sw $t2, ($t0)
+	jal CREATE_J_POLYMONIO_3
+ 	j ROTATE_T_EXIT
+ 	
+ 	ROTATE_J_R1:
+ 	bne $t2, 1, ROTATE_J_R2
+	li $t2, 2
+	sw $t2, ($t0)
+	jal CREATE_J_POLYMONIO_2
+ 	j ROTATE_J_EXIT
 
 
+ 	ROTATE_J_R2:
+ 	bne $t2, 2, ROTATE_J_R3
+	li $t2, 3
+	sw $t2, ($t0)
+	jal CREATE_J_POLYMONIO_1
+ 	j ROTATE_J_EXIT
+
+ 	ROTATE_J_R3:
+ 	bne $t2, 3, ROTATE_J_R4
+	li $t2, 0
+	sw $t2, ($t0)
+	jal CREATE_J_POLYMONIO_0
+ 	j ROTATE_J_EXIT
+
+	ROTATE_J_EXIT:
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                END ROTATE T 		                                           ##
+#########################################################################################################
 
 
 	jr $ra
@@ -2108,6 +2302,7 @@ CREATE_PIECE:
 
 	# create line test
 	move $a0, $t0
+
 
 	jal RANDOM
 	#li $v0, 2
