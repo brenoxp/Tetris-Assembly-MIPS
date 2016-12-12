@@ -63,7 +63,6 @@
 #########################################################################################################
 
 .eqv OFFSET_NUMBER_OF_PLAYERS 	0   		# 000 - 004
-.eqv OFFSET_REGISTERED_KEYS   	4	        # 004 - 068
 .eqv OFFSET_BOARD_POSITIONS   	68 		# 068 - 084
 .eqv OFFSET_MATRICES	      	84		# 084 - 5084
 .eqv OFFSET_SCORES	      	5084		# 5084 - 5100
@@ -72,7 +71,8 @@
 .eqv OFFSET_TYPE_CURRENT_PIECE 	5120		# 5120 - 5136
 .eqv OFFSET_INFO_PIECE 		5136		# 5136 - 5456 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
 .eqv OFFSET_INFO_AUX_PIECE 	5456		# 5456 - 5536 ({X, Y, Type, Rotation, [4X4]})
-.eqv OFFSET_OF_NEW_SP         	5536
+.eqv OFFSET_REGISTERED_KEYS   	5536	        # 5536 - 5600
+.eqv OFFSET_OF_NEW_SP         	5600
 
 #########################################################################################################
 ##                                       PIECE TYPE                                                    ##
@@ -135,17 +135,17 @@ MAIN:
 	
 	# Update $sp to its new offset
 	subi $sp, $sp, OFFSET_OF_NEW_SP
-	
-	# Configura os controles escolhidos se for IrDA
-	#li $s1, 1
-	#jal CONTROL_CONFIG
 
-	
 	# Save number of users (Default 1)
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	li $t1, 1
 	sw $t1, ($t0)
-
+	
+	# Configura os controles escolhidos se for IrDA
+	li $s1, 0
+	li $s2, 1 # indica que esta acontecendo antes da escolha dos jogadores
+	jal CONTROL_CONFIG
+	
 	# Inicializa a tela
 	la $t0, VGA
 	li $t1, TAMX
@@ -162,6 +162,11 @@ MAIN:
 	li $a0, 0x00
 	li $v0, 48
 	syscall
+	
+	# Configura os controles escolhidos se for IrDA
+	li $s1, 0
+	li $s2, 0 # indica que esta acontecendo depois da escolha dos jogadores
+	jal CONTROL_CONFIG
 	
 	jal INIT_MAIN_LOOP
 	
@@ -455,16 +460,11 @@ PRESS_MENU_NOTHING:
 #########################################################################################################
 # Configures the IrDA keys based on the number of players
 CONTROL_CONFIG: 
+	beq $s2, 1, OUT_CONTROL
 	# savers $ra
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4
-	sw   $s0, 0($sp) 
-	addi $sp, $sp, -4
-	sw   $s5, 0($sp)
-	addi $sp, $sp, -4
-	sw   $s6, 0($sp)
-	
+
 	# Load number of users
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t1, ($t0)
@@ -542,34 +542,25 @@ CONTROL_CONFIG:
 	jal GET_KEY 
 	subi $s5, $s5, -4
 	
-	beq $s0, $t3, END_IRDA
+	beq $s0, $t3, END_CONFIG_KEYS
 	addi $t3, $t3, 1
 	j LOOP_CONTROL
 
 	# Get key = 0 - Teclado
 	# Get key = 1 - IrDA
 	GET_KEY:
-	move $t9, $zero
-	beq $s1, $t9, TECLADO_GET_KEY
-	addi $t9, $t9, 1
-	beq $s1, $t9, IRDA_GET_KEY
+	move $t7, $zero
+	beq $s1, $t7, TECLADO_GET_KEY
+	addi $t7, $t7, 1
+	beq $s1, $t7, IRDA_GET_KEY
 	
 	# Read character and saves ASCII code
 	TECLADO_GET_KEY:
 	li $v0, 12
 	syscall
-	
 	# saves value
 	sw $v0, ($s5) 
-	
-	sw   $s6, 0($sp)
-	addi $sp, $sp, 4
-	lw   $s5, 0($sp) 
-	addi $sp, $sp, 4
-	lw   $s0, 0($sp)
-	addi $sp, $sp, 4
-	lw   $ra, 0($sp)
-	addi $sp, $sp, 4
+OUT_CONTROL: 
 	jr $ra
 
 # Keeps IrDA on loop until it reads something from the receiver addres
@@ -585,8 +576,12 @@ IRDA_GET_KEY:
 	move $v1, $zero
 	jr $ra
 
-END_IRDA:	 	 
-	lw   $ra, 0($sp)
+END_CONFIG_KEYS:
+	# Limpa a tela 
+	li $v0, 48
+	li $a0, 0x0000
+	syscall
+	lw   $ra, 0($sp) 
 	addi $sp, $sp, 4
 	jr $ra
 #########################################################################################################
