@@ -1,17 +1,17 @@
 #    UnB - Universidade de Brasília
 #    ------------------------------
-#    Departamento de Ciência da Computação - 2016/2 
-#    Organização e Arquitetura de Computadores - Turma "A" 
+#    Departamento de Ciência da Computação - 2016/2
+#    Organização e Arquitetura de Computadores - Turma "A"
 #    Prof.  Marcos Vinicius Lamar
-#    Grupo 3: Breno Xavier Pinto - 13/0103845 
+#    Grupo 3: Breno Xavier Pinto - 13/0103845
 #	      Jefferson Viana Fonseca Abreu - 13/0028959
-#	      Miguel Angelo Montagner Filho -  13/0127302	 	
+#	      Miguel Angelo Montagner Filho -  13/0127302
 #             Paulo Victor Gonçalves Farias - 13/0144754
 # --------------------------------------------------------------------------------------------------------
 #    Projeto Aplicativo: MIPS Tetris Multiplayer
 #    -------------------------------------------
 #    Objetivo: Implementação do clássico jogo Tetris para até 4 jogadores. Usando o kit de desenvolvimento
-#	       DE2-70 e a interface infravermelho. 
+#	       DE2-70 e a interface infravermelho.
 #
 #    Conteúdo do arquivo: Grupo3_OAC20162_projeto.zip
 #      > tetris.asm
@@ -26,9 +26,9 @@
 #    Padrão: O programa, escrito em Assembly MIPS 32, está em conformidade com o uso de registradores du-
 #	     rante a implementação.
 #
-#    Saída: Jogo Tetris implementado para um número de jogadores específico.  
+#    Saída: Jogo Tetris implementado para um número de jogadores específico.
 #
-#    Limitações: As peças não rotacionam.  
+#    Limitações: As peças não rotacionam.
 #
 #    Como compilar e executar: ( na MAIN se $s0 = 0, TECLADO, simulação no MARS, $s0 = 1, simulação na placa)
 #      No MARS:
@@ -42,7 +42,7 @@
 #	      - Inicie a simulação na placa
 #    Versão do Mars: 4.5
 #
-#    Foram feitos testes no sistema Linux Mint(64 bits), sendo que a versão entregue compilou na IDE e 
+#    Foram feitos testes no sistema Linux Mint(64 bits), sendo que a versão entregue compilou na IDE e
 #    também funcionou na placa.
 
 
@@ -101,9 +101,9 @@
 
 .data
 	NUM:   .float  160.0
-	
+
 	SEED: .word 0x00001015 	# Used in random function
-	
+
 	TETRIS_STRING: .asciiz "TETRIS\n"
 	PLAYERS_1:     .asciiz "1 Jogador\n"
 	PLAYERS_2:     .asciiz "2 Jogadores\n"
@@ -121,7 +121,7 @@
 	SCORE_P2:      .asciiz "SCORE P2:"
 	SCORE_P3:      .asciiz "SCORE P3:"
 	SCORE_P4:      .asciiz "SCORE P4:"
-	
+
 
 #########################################################################################################
 ##                                          TETRIS                                                     ##
@@ -132,15 +132,15 @@
 MAIN:
 	# Save initial $sp value into $s7, this value will remain unchanged through the game
 	move $s7, $sp
-	
+
 	# Update $sp to its new offset
 	subi $sp, $sp, OFFSET_OF_NEW_SP
-	
+
 	# Configura os controles escolhidos se for IrDA
 	#li $s1, 1
 	#jal CONTROL_CONFIG
 
-	
+
 	# Save number of users (Default 1)
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	li $t1, 1
@@ -150,23 +150,23 @@ MAIN:
 	la $t0, VGA
 	li $t1, TAMX
 	li $t5, 0x00  # cor 0x00000000
-	
+
 	# Printa o menu e l� a op��o escolhida, se $s1 = 0 => TECLADO, $s1 = 1 => IRDA
 	li $s1, 0
 	# li $s1, 1  <= IRDA
 	jal PRINT_MENU
-	
+
 	jal READ_MENU_OPTION_INPUT
-	
+
 	# Erase Screen
 	li $a0, 0x00
 	li $v0, 48
 	syscall
-	
+
 	jal INIT_MAIN_LOOP
-	
+
 	#jal PRINT_END_SCORE
-		
+
 	li $v0 10
 	syscall
 # <--------------------------------------  MAIN: END   -------------------------------------------------->
@@ -179,46 +179,46 @@ MAIN:
 
 # <-------------------------------------- PRINT MENU BEGIN  --------------------------------------------->
 PRINT_MENU:
-	# Saves $ra value 
-	addi $sp, $sp, -4 
+	# Saves $ra value
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	
+
 	# Clear screen
 	li $v0, 48
 	li $a0, 0x0000
 	syscall
-	
+
 	# Printing strings of init screen
-	li $v0, 104	
+	li $v0, 104
 	la $a0, TETRIS_STRING
-	li $a1, 135	
-	li $a2, 30	
-	li $a3, 0x00FF	
+	li $a1, 135
+	li $a2, 30
+	li $a3, 0x00FF
 	syscall
 	la $a0, PLAYERS_1
-	li $a1, 120	
-	li $a2, PLAYERS_1_MENU_PY	
+	li $a1, 120
+	li $a2, PLAYERS_1_MENU_PY
 	syscall
 	la $a0, PLAYERS_2
-	li $a1, 120	
-	li $a2, PLAYERS_2_MENU_PY	
+	li $a1, 120
+	li $a2, PLAYERS_2_MENU_PY
 	syscall
 	la $a0, PLAYERS_3
 	li $a1, 120
-	li $a2, PLAYERS_3_MENU_PY	
+	li $a2, PLAYERS_3_MENU_PY
 	syscall
 	la $a0, PLAYERS_4
 	li $a1, 120
 	li $a2, PLAYERS_4_MENU_PY
 	syscall
-	
+
 	li $a3, 0x00FF
 	# Prints '->' = option selected
 	jal PRINT_MENU_OPTION
-	
+
 	# Loads $ra and returns
 	lw   $ra, 0($sp)
-	addi $sp, $sp, 4 
+	addi $sp, $sp, 4
 	jr $ra
 
 # <-------------------------------------- PRINT MENU END   -------------------------------------------------->
@@ -228,9 +228,9 @@ PRINT_MENU:
 # <-------------------------------------- PRINT MENU OPTION BEGIN ------------------------------------------->
 ## Imprime seta que seleciona o jogador
 ## OFFSET_NUMBER_OF_PLAYERS : posicao Y da seta
-## $a3 : Color 
-PRINT_MENU_OPTION:  
-	addi $sp, $sp, -4 
+## $a3 : Color
+PRINT_MENU_OPTION:
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
 
 	li $v0, 104
@@ -240,7 +240,7 @@ PRINT_MENU_OPTION:
 	# Load number of users
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t1, ($t0)
-	
+
 	bne $t1, 1, MENU_OPT_2
 	li $a2, PLAYERS_1_MENU_PY
 	j MENU_OUT
@@ -255,10 +255,10 @@ PRINT_MENU_OPTION:
 	MENU_OPT_4:
 	bne $t1, 4, MENU_OUT
 	li $a2, PLAYERS_4_MENU_PY
-	
+
 	MENU_OUT:
 	syscall
-	
+
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -271,39 +271,39 @@ PRINT_MENU_OPTION:
 # <-------------------------------------- PRINT MENU OPTION INPUT BEGIN------------------------------------>
 ### $s0 = 0 => KEYBOARD, $s1 = 1 => IRDA
 READ_MENU_OPTION_INPUT:
-	# Saves $ra 
-	addi $sp, $sp, -4 
+	# Saves $ra
+	addi $sp, $sp, -4
 	sw $ra, 0($sp)
-	
+
 	# checks to see if using keyboard
 	beq $s1, $zero, USE_KEYBOARD
-	
+
 	# not using keyboard -> using irda
 	# loads irda address
 	la $s6, IRDA_READ_ADDRESS
-	# Pointer to keys allocation in memory	
+	# Pointer to keys allocation in memory
 	subi $s5, $s7, OFFSET_REGISTERED_KEYS
 
-USE_IRDA: 
+USE_IRDA:
 	# Keeps IrDA on loop until it reads something from the receiver address
 	# receives output at $v1
 	jal IRDA_GET_KEY_IMM
-	
+
 	# Ve se eh um up down ou escolha
-	DECODE_KEY: 
+	DECODE_KEY:
 	# se for um down
 	lw $t7,($s5)
 	bne $t7, $v1, NOT_DOWN_IR
 	move $v1, $zero
 	jal PRESS_MENU_DOWN
-	
-	NOT_DOWN_IR:	
+
+	NOT_DOWN_IR:
 	# se for um up
 	lw $t7,-4($s5)
 	bne $t7, $v1, NOT_UP_IR
 	move $v1, $zero
 	jal PRESS_MENU_UP
-	
+
 	NOT_UP_IR:
 	# se for um enter
 	lw $t7,-8($s5)
@@ -311,8 +311,8 @@ USE_IRDA:
 	move $v1, $zero
 	#nao eh enter, volta
 	j USE_IRDA
-	
-	ENTER_IR:	
+
+	ENTER_IR:
   	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -330,10 +330,10 @@ USE_IRDA:
 
 # <--------------------------------------    USE KEYBOARD BEGIN ------------------------------------------->
 USE_KEYBOARD:
-	li $v0, 12       
+	li $v0, 12
   	syscall            # Read Character
   	addi $a0, $v0, 0
-  	
+
   	li $t1, 115
   	bne $t1, $v0, NOT_AN_S
   	jal PRESS_MENU_DOWN
@@ -344,25 +344,25 @@ USE_KEYBOARD:
 	NOT_AN_W:
 	li $t1, 10
 	bne $t1, $v0, NOT_AN_ENTER
-  	
+
   	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
 	NOT_AN_ENTER:
 
   	j PRESS_MENU_NOTHING
-  	
+
   	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
-	
+
 # <--------------------------------------    USE KEYBOARD END ------------------------------------------->
 
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # <--------------------------------------    PRESS MENU DOWN BEGIN--------------------------------------->
 PRESS_MENU_DOWN:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
 
 	li $a3, 0x0000
@@ -372,7 +372,7 @@ PRESS_MENU_DOWN:
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t1, ($t0)
 	move $t0, $t1
-	
+
 	bne $t1, 1, PRESS_MENU_DOWN_OP2
 	li $t0, 2
 	j PRESS_MENU_DOWN_OUT
@@ -390,7 +390,7 @@ PRESS_MENU_DOWN:
 
 	li $a3, 0x00FF
 	jal PRINT_MENU_OPTION
-	
+
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -401,7 +401,7 @@ PRESS_MENU_DOWN:
 
 # <--------------------------------------    PRESS MENU UP BEGIN --------------------------------------->
 PRESS_MENU_UP:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
 
 	li $a3, 0x0000
@@ -411,7 +411,7 @@ PRESS_MENU_UP:
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t1, ($t0)
 	move $t0, $t1
-	
+
 	bne $t1, 2, PRESS_MENU_UP_OP2
 	li $t0, 1
 	j PRESS_MENU_UP_OUT
@@ -429,7 +429,7 @@ PRESS_MENU_UP:
 
 	li $a3, 0x00FF
 	jal PRINT_MENU_OPTION
-	
+
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -438,13 +438,13 @@ PRESS_MENU_UP:
 # xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # <--------------------------------------    PRESS MENU NOTHING  --------------------------------------->
-	
+
 PRESS_MENU_NOTHING:
-  	li $v0, 11       
+  	li $v0, 11
   	syscall            # Write Character
   	j READ_MENU_OPTION_INPUT
   	nop
-  	
+
 # <--------------------------------------    PRESS MENU NOTHING END ------------------------------------>
 #########################################################################################################
 ##                                       END MENU SCREEN                                               ##
@@ -454,94 +454,94 @@ PRESS_MENU_NOTHING:
 ##                                       CONTROL CONFIG                                                ##
 #########################################################################################################
 # Configures the IrDA keys based on the number of players
-CONTROL_CONFIG: 
+CONTROL_CONFIG:
 	# savers $ra
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
 	addi $sp, $sp, -4
-	sw   $s0, 0($sp) 
+	sw   $s0, 0($sp)
 	addi $sp, $sp, -4
 	sw   $s5, 0($sp)
 	addi $sp, $sp, -4
 	sw   $s6, 0($sp)
-	
+
 	# Load number of users
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t1, ($t0)
 	move $s0, $t1
-	
-	# IrDA Read Address 
+
+	# IrDA Read Address
 	la $s6, IRDA_READ_ADDRESS
-	
-	# Pointer to keys allocation in memory	
+
+	# Pointer to keys allocation in memory
 	subi $s5, $s7, OFFSET_REGISTERED_KEYS
-	
+
 	# Number of players counter
 	addi $t3, $zero, 1
-	
-	# Loop: while(players): get keys 
+
+	# Loop: while(players): get keys
 	LOOP_CONTROL:
-	
-	# Limpa a tela 
+
+	# Limpa a tela
 	li $v0, 48
 	li $a0, 0x0000
 	syscall
-	
+
 	# PRINT CONFIG STRING + PLAYER NUMBER
-	li $v0, 104	
+	li $v0, 104
 	la $a0, CONFIG_P
 	li $a1, 10
-	li $a2, 30	
-	li $a3, 0x00FF	
+	li $a2, 30
+	li $a3, 0x00FF
 	syscall
-	
+
 	li $v0, 101
 	move $a0, $t3
 	li $a1, 300
 	li $a2, 30
 	li $a3, 0x00BB
 	syscall
-	
+
 	# GET KEY 0
-	li $v0, 104	
-	la $a0, CONFIG_T0 
-	li $a1, 120	
-	li $a2, PLAYERS_1_MENU_PY	
-	li $a3, 0x00FF	
+	li $v0, 104
+	la $a0, CONFIG_T0
+	li $a1, 120
+	li $a2, PLAYERS_1_MENU_PY
+	li $a3, 0x00FF
 	syscall
-	jal GET_KEY 
+	jal GET_KEY
 	subi $s5, $s5, -4
-	
-	# GET KEY 1	
-	li $v0, 104	
+
+	# GET KEY 1
+	li $v0, 104
 	la $a0, CONFIG_T1
-	li $a1, 120	
-	li $a2, PLAYERS_2_MENU_PY	
-	li $a3, 0x00FF	
+	li $a1, 120
+	li $a2, PLAYERS_2_MENU_PY
+	li $a3, 0x00FF
 	syscall
-	jal GET_KEY 
+	jal GET_KEY
 	subi $s5, $s5, -4
-	
+
 	# GET KEY 2
-	li $v0, 104	
+	li $v0, 104
 	la $a0, CONFIG_T2
 	li $a1, 120
-	li $a2, PLAYERS_3_MENU_PY	
-	li $a3, 0x00FF	
+	li $a2, PLAYERS_3_MENU_PY
+	li $a3, 0x00FF
 	syscall
-	jal GET_KEY 
+	jal GET_KEY
 	subi $s5, $s5, -4
-	
-	# GET KEY 3	
-	li $v0, 104	
+
+	# GET KEY 3
+	li $v0, 104
 	la $a0, CONFIG_T3
 	li $a1, 120
 	li $a2, PLAYERS_4_MENU_PY
 	li $a3, 0x00FF
 	syscall
-	jal GET_KEY 
+	jal GET_KEY
 	subi $s5, $s5, -4
-	
+
 	beq $s0, $t3, END_IRDA
 	addi $t3, $t3, 1
 	j LOOP_CONTROL
@@ -553,18 +553,18 @@ CONTROL_CONFIG:
 	beq $s1, $t9, TECLADO_GET_KEY
 	addi $t9, $t9, 1
 	beq $s1, $t9, IRDA_GET_KEY
-	
+
 	# Read character and saves ASCII code
 	TECLADO_GET_KEY:
 	li $v0, 12
 	syscall
-	
+
 	# saves value
-	sw $v0, ($s5) 
-	
+	sw $v0, ($s5)
+
 	sw   $s6, 0($sp)
 	addi $sp, $sp, 4
-	lw   $s5, 0($sp) 
+	lw   $s5, 0($sp)
 	addi $sp, $sp, 4
 	lw   $s0, 0($sp)
 	addi $sp, $sp, 4
@@ -585,7 +585,7 @@ IRDA_GET_KEY:
 	move $v1, $zero
 	jr $ra
 
-END_IRDA:	 	 
+END_IRDA:
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -615,14 +615,14 @@ PLOT_PIXEL:
 #########################################################################################################
 # $a0 = Amount of players
 PRINT_STATIC_BOARDS:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
 
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t1, ($t0)
-	
+
 	li $a2, 0xFF
-	
+
 	bne $t1, 1, IF_NOT_1_PLAYER
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	li $a0, 125
@@ -634,12 +634,12 @@ PRINT_STATIC_BOARDS:
 	li $a0, 65
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
-	
+
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 4
 	li $a0, 200
 	sw $a0, ($t0)
-	
+
 	jal PRINT_ONE_BOARD
 	IF_NOT_2_PLAYERS:
 	bne $t1, 3, IF_NOT_3_PLAYERS
@@ -647,13 +647,13 @@ PRINT_STATIC_BOARDS:
 	li $a0, 30
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
-	
+
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 4
 	li $a0, 130
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
-	
+
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 8
 	li $a0, 230
@@ -665,26 +665,26 @@ PRINT_STATIC_BOARDS:
 	li $a0, 4
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
-	
+
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 4
 	li $a0, 84
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
-	
+
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 8
 	li $a0, 164
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
-	
+
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t0, $t0, 12
 	li $a0, 244
 	sw $a0, ($t0)
 	jal PRINT_ONE_BOARD
-	IF_NOT_4_PLAYERS:	
-	
+	IF_NOT_4_PLAYERS:
+
 
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
@@ -700,7 +700,7 @@ PRINT_STATIC_BOARDS:
 # $a0 = X position
 # $a2 = color
 PRINT_ONE_BOARD:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
 
 	li $a1, 50
@@ -708,25 +708,25 @@ PRINT_ONE_BOARD:
 	li $t0, 0
 	PRINT_ONE_BOARD_LOOP_1:
 	jal PLOT_PIXEL
-	
+
 	addi $a0, $a0, 72
 	jal PLOT_PIXEL
 	addi $a0, $a0, -72
-	
+
 	addi $a1, $a1, 1
 	addi $t0, $t0, 1
 	bne $t0, 142, PRINT_ONE_BOARD_LOOP_1
-	
+
 	#li $a1, 0
 	#for 0 -> 70
 	li $t0, 20
 	PRINT_ONE_BOARD_LOOP_2:
-	
+
 	jal PLOT_PIXEL
 	addi $a1, $a1, -142
 	jal PLOT_PIXEL
 	addi $a1, $a1, 142
-	
+
 	addi $a0, $a0, 1
 	addi $t0, $t0, 1
 	bne $t0, 93, PRINT_ONE_BOARD_LOOP_2
@@ -749,52 +749,52 @@ PRINT_ONE_BOARD:
 # $a3 = Player {0, 1, 2, 3}
 
 PRINT_SQUARE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
 
 	mul $a3, $a3, 4
-	
+
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	sub $t0, $t0, $a3
 	lw $t1, ($t0)
-	
-	
+
+
 	move $t2, $t1	# nesta linha $t2 tem o x indicando o incio do campo de jogo
 	# offset de x
 	mul $a0, $a0, 7
 	add $t2, $t2, $a0
 	addi $t2, $t2, 2	# Pula dois pixel para mostrar vazio entre dois quadrados
-	
+
 	addi $t4, $t2, 6	# end x
-	
-	
+
+
 	#li $t3, 50		#inicio de y
 	#addi $t5, $t3, 6	# end y
-	
+
 	li $t3, 50	# nesta linha $t3 tem o y indicando o incio do campo de jogo
 	# offset de y
 	mul $a1, $a1, 7
 	add $t3, $t3, $a1
 	addi $t3, $t3, 2	# Pula dois pixel para mostrar vazio entre dois quadrados
 	move $t6, $t3		#salva valor de $t3 em $t6
-	
+
 	addi $t5, $t3, 6	# end y
-	
-	
+
+
 	PRINT_SQUARE_LOOP1:
 	move $t3, $t6
 	PRINT_SQUARE_LOOP2:
-	
+
 	move $a0, $t2
 	move $a1, $t3
 	jal PLOT_PIXEL
-	
+
 	addi $t3, $t3, 1
-	
+
 	bne $t3, $t5, PRINT_SQUARE_LOOP2
 	addi $t2, $t2, 1
 	bne $t2, $t4, PRINT_SQUARE_LOOP1
-			
+
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -813,37 +813,37 @@ INIT_MATRICES:
 	# $t4 end position of memory to save color
 	# $t5 color
 	# $t6 INIT MATRICES OFFSET
-	
+
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t1, ($t0)
 	li $t2, 0
-	
+
 	subi $t0, $s7, OFFSET_MATRICES
 
 	INIT_MATRICES_MAIN_LOOP:
-		
+
 	subi $t4, $t0, 160
 	INIT_MATRICES_LOOP2:
 	li $t5, 0x00
 	sw $t5, ($t0)
 	subi $t0, $t0, 1
 	bne $t0, $t4, INIT_MATRICES_LOOP2
-	
-	
+
+
 	subi $t4, $t0, 800
 	INIT_MATRICES_LOOP1:
 	li $t5, 0x00
 	sw $t5, ($t0)
 	subi $t0, $t0, 1
 	bne $t0, $t4, INIT_MATRICES_LOOP1
-	
+
 	subi $t4, $t0, 40
 	INIT_MATRICES_LOOP3:
 	li $t5, 0xFF
 	sw $t5, ($t0)
 	subi $t0, $t0, 1
 	bne $t0, $t4, INIT_MATRICES_LOOP3
-	
+
 	addi $t2, $t2, 1
 	bne $t1, $t2, INIT_MATRICES_MAIN_LOOP
 
@@ -857,11 +857,11 @@ INIT_MATRICES:
 ##                                       PRINT BOARDS 		                                       ##
 #########################################################################################################
 PRINT_BOARDS:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s1, 0($sp)
 
 	li $s5, 0
@@ -872,7 +872,7 @@ PRINT_BOARDS:
 	jal PRINT_BOARD
 	addi $s1, $s1, 1
 	bne $s1, $s0, LOOP_PRINT_BOARDS
-	
+
 	lw   $s1, 0($sp)
 	addi $sp, $sp, 4
 	lw   $s0, 0($sp)
@@ -891,25 +891,25 @@ PRINT_BOARDS:
 #########################################################################################################
 # $a3 player = {0, 1, 2, 3}
 PRINT_BOARD:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, ($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s1, ($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s2, ($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s3, ($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s4, ($sp)
-	
+
 	move $s4, $a3
 	mul $s3, $a3, 1000
-	
+
 	subi $s2, $s7, OFFSET_MATRICES
 	sub $s2, $s2, $s3
-	
+
 	li $s0, 0
 	li $s1, -4
 	PRINT_BOARD_LOOP1:
@@ -920,9 +920,9 @@ PRINT_BOARD:
 	lw $a2, ($s2)
 	move $a3, $s4
 	jal PRINT_SQUARE
-	
+
 	subi $s2, $s2, 4
-	
+
 	addi $s0, $s0, 1
 	bne $s0, 10, PRINT_BOARD_LOOP2
 	addi $s1, $s1, 1
@@ -950,9 +950,9 @@ PRINT_BOARD:
 ##                                       INIT SCORE		                                       ##
 #########################################################################################################
 INIT_SCORE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	
+
 	li $t0, 0
 	subi $t1, $s7, OFFSET_SCORES
 	sw $t0, ($t1)
@@ -962,7 +962,7 @@ INIT_SCORE:
 	sw $t0, ($t1)
 	subi $t1, $t1, 4
 	sw $t0, ($t1)
-	
+
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -977,30 +977,30 @@ INIT_SCORE:
 # $a0 = Player {0, 1, 2, 3}
 # $a1 = Score to be added
 UPDATE_SCORE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	
+
 	move $t2, $a1
-	
+
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
-	
+
 	mul $t1, $a0, 4
 	sub $t0, $t0, $t1
 	lw $a1, ($t0)		# $a1 = X Position to print
 	addi $a1, $a1, 8
-	
+
 	subi $t0, $s7, OFFSET_SCORES
 	sub $t0, $t0, $t1
 	lw $a0, ($t0)		# $a0 = Value to print
-	
+
 	add $a0, $a0, $t2
 	sw $a0, ($t0)
-	
+
 	li $v0, 101
 	li $a2, 200
 	li $a3, 0xFF
 	syscall
-	
+
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -1008,63 +1008,63 @@ UPDATE_SCORE:
 ##                                     END UPDATE SCORE                                                ##
 #########################################################################################################
 
-	
+
 #########################################################################################################
 ##                                       MAIN LOOP		                                       ##
 #########################################################################################################
 INIT_MAIN_LOOP:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)	# $s0 = Amount of users
-	addi $sp, $sp, -4 
-	sw   $s1, 0($sp)	# $s1 = Count amount of users ($s1 -> $s0) 
-	addi $sp, $sp, -4 
-	sw   $s2, 0($sp)	# apagar 
-	
-	li $s2, 0	# apagar 
-	
+	addi $sp, $sp, -4
+	sw   $s1, 0($sp)	# $s1 = Count amount of users ($s1 -> $s0)
+	addi $sp, $sp, -4
+	sw   $s2, 0($sp)	# apagar
+
+	li $s2, 0	# apagar
+
 	jal INIT_MATRICES
-	
+
 	jal PRINT_STATIC_BOARDS
-	
+
 	#jal PRINT_BOARDS
-	
+
 	jal INIT_SCORE
-	
+
 	jal INIT_USERS_CLOCKS
-	
+
 	subi $t0, $s7, OFFSET_SPEED_DOWN
 	li $t1, 1000
 	sw $t1, ($t0)		# save initial difficulty
-	
+
 	li $s1, 0		# Count amount of users = 0
-	
+
 	subi $s0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $s0, ($s0)
-	
+
 	li $s2, 0
-	
+
 	li $a0, 0
 	jal CREATE_PIECE
-	
+
 	#li $a0, 0
 	#jal CAN_ROTATE_CURRENT_PIECE
-	
+
 	MAIN_LOOP:
-	
+
 	MAIN_LOOP_PLAYER:
-	
+
 	move $a0, $s1
 	jal PLAYER_LOOP
 	addi $s1, $s1, 1
 	bne $s1, $s0,  MAIN_LOOP_PLAYER
 	li $s1, 0
-	
+
 	addi $s2, $s2, 1
 	bne $s2, 100000000, MAIN_LOOP
-	
-	
+
+
 	EXIT_MAIN_LOOP:
 	lw   $s2, 0($sp)
 	addi $sp, $sp, 4
@@ -1084,32 +1084,32 @@ INIT_MAIN_LOOP:
 #########################################################################################################
 # $a0 = Current Player
 PLAYER_LOOP:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s1, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s2, 0($sp)
-	
+
 	move $s2, $a0
-	
+
 	subi $s0, $s7, OFFSET_USER_CLOCK	# $t0 = offset user clock
 	mul $a0, $a0, 4
-	sub $s0, $s0, $a0 
+	sub $s0, $s0, $a0
 	lw $s1, ($s0)						# $t1 = User clock
-	
+
 	subi $t2, $s7, OFFSET_SPEED_DOWN	# $t2 = offset speed down
 	lw $t3, ($t2)						# $t3 = speed down
-	
+
 
 	# keyboard data address 0xff100004
 	# right -> 110
 	# left -> 97
 	# up -> 119
 
-	
+
 	la $t7, 0xFF100004
 	nop
 	nop
@@ -1135,7 +1135,7 @@ PLAYER_LOOP:
 
 
 
-	
+
   	li $t6, 0
   	sw $t6, ($t7)
 
@@ -1158,12 +1158,12 @@ PLAYER_LOOP:
 	move $a0, $s2
 	jal CREATE_PIECE
 	DID_DOWN_CURRENT_PIECE:
-	
+
 	li $s1, 0
 	sw $s1, ($s0)						# user clock = 0
-	
+
 	PLAYER_DO_NOTHING:
-	
+
 	addi $s1, $s1, 1					# User_clock++
 	sw $s1, ($s0)
 
@@ -1185,11 +1185,11 @@ PLAYER_LOOP:
 #########################################################################################################
 # $a0 = player
 SOLID_PIECE:
-	addi $sp, $sp, -4 
-	sw   $s0, 0($sp)	
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)
+	addi $sp, $sp, -4
 	sw   $s1, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s2, 0($sp)
 
 	subi $t0, $s7, OFFSET_MATRICES
@@ -1202,7 +1202,7 @@ SOLID_PIECE:
 	sub $t1, $t1, $t2 			# $t1 = current piece
 
 	lw $t2, ($t1)				# $t2 = current piece X
-	subi $t1, $t1, 4			
+	subi $t1, $t1, 4
 	lw $t3, ($t1)				# $t3 = current piece Y
 
 	addi $t4, $t2, 4			# $t4 = Max X
@@ -1217,11 +1217,11 @@ SOLID_PIECE:
 
 	lw $t5, ($t1)					# $t5 = load color
 	subi $t1, $t1, 4
-	
+
 	beq $t5, 0x00, NOT_SOLID_PIECE
 
 	# copy
-	
+
 	mul $s0, $t3, 10
 	add $s0, $s0, $t2
 	mul $s0, $s0, 4
@@ -1258,9 +1258,9 @@ SOLID_PIECE:
 # $a0 = player
 # $v0 = (can_rotate) ? 1 : 0
 CAN_ROTATE_CURRENT_PIECE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
 
 	move $s0, $a0
@@ -1292,7 +1292,7 @@ CAN_ROTATE_CURRENT_PIECE:
 	bne $a0, 6, ROTATE_NOT_Z
 
 	ROTATE_NOT_Z:
-	
+
 
 	# $a0 = player
 	# $v0 = (can_move) ? 1 : 0
@@ -1314,7 +1314,7 @@ CAN_ROTATE_CURRENT_PIECE:
 ##############
 ROTATE_J:
 
-	
+
 
 
 	jr $ra
@@ -1330,9 +1330,9 @@ ROTATE_J:
 # $a0 = player
 # $v0 = (can_down) ? 1 : 0
 CAN_DOWN_CURRENT_PIECE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
 
 	move $s0, $a0
@@ -1367,9 +1367,9 @@ CAN_DOWN_CURRENT_PIECE:
 # $a0 = player
 # $v0 = (can_down) ? 1 : 0
 CAN_RIGHT_CURRENT_PIECE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
 
 	move $s0, $a0
@@ -1403,9 +1403,9 @@ CAN_RIGHT_CURRENT_PIECE:
 # $a0 = player
 # $v0 = (can_down) ? 1 : 0
 CAN_LEFT_CURRENT_PIECE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
 
 	move $s0, $a0
@@ -1465,9 +1465,9 @@ COPY_CURRENT_PIECE:
 #########################################################################################################
 # $a0 = player
 COPY_AUX_PIECE_AND_PRINT:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
 
 	move $s0, $a0
@@ -1480,7 +1480,7 @@ COPY_AUX_PIECE_AND_PRINT:
 	mul $a0, $a0, 80
 	sub $t0, $t0, $a0						# $t0 = Current piece
 
-	subi $t1, $s7, OFFSET_INFO_AUX_PIECE	# $t1 = Aux Piece	
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE	# $t1 = Aux Piece
 
 	li $t2, 0								# $t2 = count
 
@@ -1512,34 +1512,34 @@ COPY_AUX_PIECE_AND_PRINT:
 ##                                    AUX PIECE CAN MOVE  		                               ##
 #########################################################################################################
 # Recieves a piece that mean to be moved, avaliate
-# if this piece can visualy appear in this position 
+# if this piece can visualy appear in this position
 # $a0 = player
 # $v0 = (can_move) ? 1 : 0
 AUX_PIECE_CAN_MOVE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s1, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s2, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s3, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s4, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s5, 0($sp)
 
 	move $s5, $a0
-	
+
 	subi $s2, $s7, OFFSET_INFO_AUX_PIECE
 	lw $s0, ($s2)				# $s0 = X
 	addi $s4, $s0, 4 			# $s4 = Max X
 
 	subi $s2, $s2, 4
 	lw $s1, ($s2)				# $s1 = Y
-	
+
 	subi $s2, $s2, 12			# $s2 = start matrix
 	subi $s3, $s2, 64			# $s3 = end matrix
 
@@ -1614,7 +1614,7 @@ HAVE_PIECE:
 	move $a2, $t0
 
 	mul $a0, $a0, 1000
-	
+
 	subi $t0, $s7, OFFSET_MATRICES
 	sub $t0, $t0, $a0
 
@@ -1643,9 +1643,9 @@ HAVE_PIECE:
 #########################################################################################################
 # $a0 = player
 DOWN_CURRENT_PIECE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
 
 	move $s0, $a0
@@ -1656,12 +1656,12 @@ DOWN_CURRENT_PIECE:
 	subi $t0, $s7, OFFSET_INFO_PIECE
 	mul $t1, $s0, 80	# bytes in info matrix
 	sub $t0, $t0, $t1
-	
+
 	subi $t0, $t0, 4
 	lw $t1, ($t0)
 	addi $t1, $t1, 1
 	sw $t1, ($t0)		#save initial y
-	
+
 	move $a0, $s0
 	li $a1, 0
 	jal PRINT_CURRENT_PIECE
@@ -1680,34 +1680,34 @@ DOWN_CURRENT_PIECE:
 #########################################################################################################
 # $a0 = Player to create piece {0, 1, 2, 3}
 CREATE_PIECE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
-	
+
 	move $s0, $a0	#$save $a0 in $s0
-	
+
 	subi $t0, $s7, OFFSET_INFO_PIECE
 	mul $t1, $s0, 80	# bytes in info matrix
 	sub $t0, $t0, $t1
-	
+
 	li $t1, 3
 	sw $t1, ($t0)		#save initial x
-	
+
 	subi $t0, $t0, 4
 	li $t1, -3
 	#li $t1, 5
 	sw $t1, ($t0)		#save initial y
-	
+
 	subi $t0, $t0, 4
 	move $a1, $t0		 # Send address of Type to be saved
-	
+
 	subi $t0, $t0, 4
 	li $t1, 0
 	sw $t1, ($t0)		#save rotation
-	
+
 	subi $t0, $t0, 4	# now $t0 is on the first position of the matrix
-	
+
 	#clear matrix (16 positions)
 	move $t1, $t0
 	li $t2, 64
@@ -1718,12 +1718,12 @@ CREATE_PIECE:
 	sw $t3, ($t1)
 	subi $t1, $t1, 4
 	bne $t1, $t2 CREATE_PIECE_CLEAR_LOOP
-	
+
 	# create line test
 	move $a0, $t0
-	
-	jal RANDOM
-	#li $v0, 1
+
+	#jal RANDOM
+	li $v0, 2
 
 	bne $v0, 0, NOT_CREATE_PIECE_0
 	jal CREATE_STRAIGHT_POLYMONIO_1
@@ -1734,7 +1734,7 @@ CREATE_PIECE:
 	NOT_CREATE_PIECE_1:
 
 	bne $v0, 2, NOT_CREATE_PIECE_2
-	jal CREATE_T_POLYMONIO_0
+	jal CREATE_T_POLYMONIO_3
 	NOT_CREATE_PIECE_2:
 
 	bne $v0, 3, NOT_CREATE_PIECE_3
@@ -1752,7 +1752,7 @@ CREATE_PIECE:
 	bne $v0, 6, NOT_CREATE_PIECE_6
 	jal CREATE_Z_POLYMONIO_0
 	NOT_CREATE_PIECE_6:
-		
+
 	move $a0, $s0
 	jal PRINT_CURRENT_PIECE
 
@@ -1773,12 +1773,12 @@ CREATE_PIECE:
 # $a1 = Type adress
 CREATE_STRAIGHT_POLYMONIO_0:
 	move $t0, $a0
-	
+
 	li $t1, 0
 	sw $t1, ($a1)
-	
+
 	li $t3, 0xAA	# piece color
-	
+
 	subi $t0, $t0, 4
 	sw $t3, ($t0)
 	subi $t0, $t0, 16
@@ -1798,12 +1798,12 @@ CREATE_STRAIGHT_POLYMONIO_0:
 # $a1 = Type adress
 CREATE_STRAIGHT_POLYMONIO_1:
 	move $t0, $a0
-	
+
 	li $t1, 0
 	sw $t1, ($a1)
-	
+
 	li $t3, 0xAA	# piece color
-	
+
 	subi $t0, $t0, 48
 	sw $t3, ($t0)
 	subi $t0, $t0, 4
@@ -1817,7 +1817,7 @@ CREATE_STRAIGHT_POLYMONIO_1:
 
 
 #########################################################################################################
-##                                    END CREATE STRAIGHT POLYOMINO	                               ##
+##                                    END CREATE STRAIGHT POLYOMINO	                                   ##
 #########################################################################################################
 
 #########################################################################################################
@@ -1827,12 +1827,12 @@ CREATE_STRAIGHT_POLYMONIO_1:
 # $a1 = Type adress
 CREATE_SQUARE_POLYMONIO_0:
 	move $t0, $a0
-	
+
 	li $t1, 1
 	sw $t1, ($a1)
-	
+
 	li $t3, 0x70	# piece color
-	
+
 	subi $t0, $t0, 36
 	sw $t3, ($t0)
 	subi $t0, $t0, 4
@@ -1851,7 +1851,7 @@ CREATE_SQUARE_POLYMONIO_0:
 ##    Clear info matrix            ##
 #####################################
 # $a0 = begin matrix
-	
+
 
 	jr $ra
 #####################################
@@ -1865,12 +1865,12 @@ CREATE_SQUARE_POLYMONIO_0:
 # $a1 = Type adress
 CREATE_T_POLYMONIO_0:
 	move $t0, $a0
-	
+
 	li $t1, 2
 	sw $t1, ($a1)
-	
+
 	li $t3, 0x96	# piece color
-	
+
 	subi $t0, $t0, 36
 	sw $t3, ($t0)
 	subi $t0, $t0, 12
@@ -1882,8 +1882,90 @@ CREATE_T_POLYMONIO_0:
 
 	jr $ra
 #########################################################################################################
-##                                     END CREATE T POLYOMINO	                                       ##
+##                                     END CREATE T POLYOMINO	                                         ##
 #########################################################################################################
+
+#########################################################################################################
+##                                     CREATE T POLYOMINO	1                                            ##
+#########################################################################################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_T_POLYMONIO_1:
+	move $t0, $a0
+
+	li $t1, 2
+	sw $t1, ($a1)
+
+	li $t3, 0x96	# piece color
+
+	subi $t0, $t0, 20
+	sw $t3, ($t0)
+	subi $t0, $t0, 16
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 12
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################################################################################
+##                                     END CREATE T POLYOMINO	1                                       ##
+#########################################################################################################
+
+#########################################################################################################
+##                                     CREATE T POLYOMINO	2                                            ##
+#########################################################################################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_T_POLYMONIO_2:
+	move $t0, $a0
+
+	li $t1, 2
+	sw $t1, ($a1)
+
+	li $t3, 0x96	# piece color
+
+	subi $t0, $t0, 32
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 12
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################################################################################
+##                                     END CREATE T POLYOMINO	2                                       ##
+#########################################################################################################
+
+#########################################################################################################
+##                                     CREATE T POLYOMINO	3                                            ##
+#########################################################################################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_T_POLYMONIO_3:
+	move $t0, $a0
+
+	li $t1, 2
+	sw $t1, ($a1)
+
+	li $t3, 0x96	# piece color
+
+	subi $t0, $t0, 20
+	sw $t3, ($t0)
+	subi $t0, $t0, 12
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 16
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################################################################################
+##                                     END CREATE T POLYOMINO	3                                       ##
+#########################################################################################################
+
 
 #########################################################################################################
 ##                                     CREATE J POLYOMINO	                                       ##
@@ -1892,12 +1974,12 @@ CREATE_T_POLYMONIO_0:
 # $a1 = Type adress
 CREATE_J_POLYMONIO_0:
 	move $t0, $a0
-	
+
 	li $t1, 3
 	sw $t1, ($a1)
-	
+
 	li $t3, 0xA6	# piece color
-	
+
 	subi $t0, $t0, 36
 	sw $t3, ($t0)
 	subi $t0, $t0, 16
@@ -1919,12 +2001,12 @@ CREATE_J_POLYMONIO_0:
 # $a1 = Type adress
 CREATE_L_POLYMONIO_0:
 	move $t0, $a0
-	
+
 	li $t1, 4
 	sw $t1, ($a1)
-	
+
 	li $t3, 0xB6	# piece color
-	
+
 	subi $t0, $t0, 40
 	sw $t3, ($t0)
 	subi $t0, $t0, 8
@@ -1946,12 +2028,12 @@ CREATE_L_POLYMONIO_0:
 # $a1 = Type adress
 CREATE_S_POLYMONIO_0:
 	move $t0, $a0
-	
+
 	li $t1, 5
 	sw $t1, ($a1)
-	
+
 	li $t3, 0xB0	# piece color
-	
+
 	subi $t0, $t0, 36
 	sw $t3, ($t0)
 	subi $t0, $t0, 4
@@ -1973,12 +2055,12 @@ CREATE_S_POLYMONIO_0:
 # $a1 = Type adress
 CREATE_Z_POLYMONIO_0:
 	move $t0, $a0
-	
+
 	li $t1, 6
 	sw $t1, ($a1)
-	
+
 	li $t3, 0xCA	# piece color
-	
+
 	subi $t0, $t0, 32
 	sw $t3, ($t0)
 	subi $t0, $t0, 4
@@ -1999,21 +2081,21 @@ CREATE_Z_POLYMONIO_0:
 # $a0 = Player {0, 1, 2, 3}
 # $a1 = if ($a1 == 1) print black
 PRINT_CURRENT_PIECE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s1, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s2, 0($sp)	# $s2 = X
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s3, 0($sp)	# $s3 = Y
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s4, 0($sp)	# $s4 = player
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s5, 0($sp)	# $s5 = end X
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s6, 0($sp)
 
 	move $s4, $a0
@@ -2022,20 +2104,20 @@ PRINT_CURRENT_PIECE:
 	subi $t0, $s7, OFFSET_INFO_PIECE
 	mul $t1, $a0, 80	# bytes in info matrix
 	sub $s0, $t0, $t1	# $s0 = fist position in info
-	
+
 	#({X, Y, Typer, Rotation, [4X4]})
 	lw $s2, ($s0)		# load X
 	subi $s0, $s0, 4
 	lw $s3, ($s0)		# load Y
-	
+
 	addi $s5, $s2, 4	# calculate end X
-	
+
 	subi $s0, $s0, 12	# now $s0 is in te first position of the matrix
 	subi $s1, $s0, 64	# $s1 saves the position to end the loop
-	
+
 	PRINT_CURRENT_PIECE_LOOP:
 	lw $t0, ($s0)
-	
+
 	beq $t0, 0x00, DO_NOT_PRINT_CURRENT_PIECE
 	# Print square
 
@@ -2043,7 +2125,7 @@ PRINT_CURRENT_PIECE:
 	# print black
 	li $t0, 0x00
 	PRINT_DEFAULT_COLOR:
-	
+
 	blt $s3, 0, DO_NOT_PRINT_CURRENT_PIECE		# Y < 0
 
 	move $a0, $s2
@@ -2051,18 +2133,18 @@ PRINT_CURRENT_PIECE:
 	move $a2, $t0
 	move $a3, $s4
 	jal PRINT_SQUARE
-	
+
 	DO_NOT_PRINT_CURRENT_PIECE:
-	
+
 	addi $s2, $s2, 1
 	bne $s2, $s5, DO_NOT_INCREASE_Y
 	subi $s2, $s2, 4
 	addi $s3, $s3, 1
 	DO_NOT_INCREASE_Y:
-	
+
 	subi $s0, $s0, 4
 	bne $s0, $s1, PRINT_CURRENT_PIECE_LOOP
-	
+
 	lw   $s6, 0($sp)
 	addi $sp, $sp, 4
 	lw   $s5, 0($sp)
@@ -2100,21 +2182,21 @@ INCREASE_DIFFICULTY:
 #########################################################################################################
 ##                                   INIT USER CLOCK     	                                       ##
 #########################################################################################################
-INIT_USERS_CLOCKS: 
+INIT_USERS_CLOCKS:
 	subi $t0, $s7, OFFSET_USER_CLOCK
-	
+
 	li $t1, 0
 	sw $t1, ($t0)
-	
+
 	subi $t0, $t0, 4
 	sw $t1, ($t0)
-	
+
 	subi $t0, $t0, 4
 	sw $t1, ($t0)
-	
+
 	subi $t0, $t0, 4
 	sw $t1, ($t0)
-	
+
 	jr $ra
 #########################################################################################################
 ##                                   END INIT USER CLOCK     	                                       ##
@@ -2122,28 +2204,28 @@ INIT_USERS_CLOCKS:
 
 #########################################################################################################
 ##                                  RANDOM NUMBER GENERATOR                                            ##
-#########################################################################################################		
-	
-#utilizando LCG (a = 5, c = 1, m = 16, x0 = SEED)		
-RANDOM: 
+#########################################################################################################
+
+#utilizando LCG (a = 5, c = 1, m = 16, x0 = SEED)
+RANDOM:
 
 	la $t0, SEED
-	lw $t1, 0($t0) 		#carrega em t1 o valor do seed	
+	lw $t1, 0($t0) 		#carrega em t1 o valor do seed
 
-	li $t2, 5		
-	mult $t1, $t2		#a*Xn		
-	mflo $t1		
-	addi $t1, $t1, 1	# a*Xn + c		
-	li $t2, 16		
-	div $t1, $t2		#mod m		
-	mfhi $t1		#t1 = (a*Xn+c)%m = Xn+1		
-	sw $t1, 0($t0)		#devolve para poder calcular mais adiante o prox		
-			
-	li $t2, 7		
-	div $t1, $t2		#coloca o resultado do LCG para mod 7		
-	mfhi $t1		
-	move $v0, $t1		#coloca o valor em v0 para retorno		
-	jr $ra		
+	li $t2, 5
+	mult $t1, $t2		#a*Xn
+	mflo $t1
+	addi $t1, $t1, 1	# a*Xn + c
+	li $t2, 16
+	div $t1, $t2		#mod m
+	mfhi $t1		#t1 = (a*Xn+c)%m = Xn+1
+	sw $t1, 0($t0)		#devolve para poder calcular mais adiante o prox
+
+	li $t2, 7
+	div $t1, $t2		#coloca o resultado do LCG para mod 7
+	mfhi $t1
+	move $v0, $t1		#coloca o valor em v0 para retorno
+	jr $ra
 #########################################################################################################
 ##                                END  RANDOM NUMBER GENERATOR                                         ##
 #########################################################################################################
@@ -2155,20 +2237,20 @@ PRINT_END_SCORE:
 	li $v0, 48
 	li $a0, 0x00
 	syscall
-	
+
 	subi $t1, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t0, ($t1)
 	move $s0, $t0
 	subi $s1, $s7, OFFSET_SCORES
-	
+
 	addi $t0, $zero, 1
-	
+
 	# Printa P1
-	li $v0, 104	
+	li $v0, 104
 	la $a0, SCORE_P1
 	li $a1, 10
-	li $a2, 60	
-	li $a3, 0x00FF	
+	li $a2, 60
+	li $a3, 0x00FF
 	syscall
 	lw $t3, 0($s1)
 	li $v0, 101
@@ -2181,11 +2263,11 @@ PRINT_END_SCORE:
 	addi $t0, $t0, 1
 
 	# Printa P2
-	li $v0, 104	
+	li $v0, 104
 	la $a0, SCORE_P2
 	li $a1, 10
 	li $a2, 90
-	li $a3, 0x00FF	
+	li $a3, 0x00FF
 	syscall
 	lw $t3, -4($s1)
 	li $v0, 101
@@ -2198,11 +2280,11 @@ PRINT_END_SCORE:
 	addi $t0, $t0, 1
 
 	# PRINTA P3
-	li $v0, 104	
+	li $v0, 104
 	la $a0, SCORE_P3
 	li $a1, 10
-	li $a2, 120	
-	li $a3, 0x00FF	
+	li $a2, 120
+	li $a3, 0x00FF
 	syscall
 	lw $t3, -8($s1)
 	li $v0, 101
@@ -2214,11 +2296,11 @@ PRINT_END_SCORE:
 	beq $s0, $t0, END_SCORE
 
 	# PRINTA P4
-	li $v0, 104	
+	li $v0, 104
 	la $a0, SCORE_P4
 	li $a1, 10
-	li $a2, 150	
-	li $a3, 0x00FF	
+	li $a2, 150
+	li $a3, 0x00FF
 	syscall
 	lw $t3, -12($s1)
 	li $v0, 101
@@ -2233,5 +2315,3 @@ END_SCORE:
 #########################################################################################################
 ##                                    END PRINT END SCORE                                              ##
 #########################################################################################################
-
-
