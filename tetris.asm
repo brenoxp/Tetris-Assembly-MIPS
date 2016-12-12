@@ -946,6 +946,7 @@ PRINT_BOARD:
 ##                                      END PRINT BOARD 		                               ##
 #########################################################################################################
 
+
 #########################################################################################################
 ##                                       INIT SCORE		                                       ##
 #########################################################################################################
@@ -956,13 +957,36 @@ INIT_SCORE:
 	li $t0, 0
 	subi $t1, $s7, OFFSET_SCORES
 	sw $t0, ($t1)
-	subi $t1, $t1, 4
+	subi $t1, $t1, -4
 	sw $t0, ($t1)
-	subi $t1, $t1, 4
+	subi $t1, $t1, -4
 	sw $t0, ($t1)
-	subi $t1, $t1, 4
+	subi $t1, $t1, -4
 	sw $t0, ($t1)
 	
+	subi $t7, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t7, ($t7)
+	
+	li $a0, 1
+	li $a1, 0
+	jal UPDATE_SCORE
+	beq $t7, 1, END_INIT
+	
+	li $a0, 2
+	li $a1, 0
+	jal UPDATE_SCORE
+	beq $t7, 2, END_INIT
+	
+	li $a0, 3
+	li $a1, 0
+	jal UPDATE_SCORE
+	beq $t7, 3, END_INIT
+	
+	li $a0, 4
+	li $a1, 0
+	jal UPDATE_SCORE
+	
+END_INIT:
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
@@ -979,28 +1003,81 @@ INIT_SCORE:
 UPDATE_SCORE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
-	
-	move $t2, $a1
-	
+	move $t5, $a1
+	move $t6, $a0
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
+	subi $t7, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t7, ($t7)
 	
-	mul $t1, $a0, 4
-	sub $t0, $t0, $t1
+	beq $t7, 1, UPDATE_1
+	beq $t7, 2, UPDATE_2
+	beq $t7, 3, UPDATE_3
+	beq $t7, 4, UPDATE_4
+# 1 PLAYER, atualiza player 1
+UPDATE_1:
 	lw $a1, ($t0)		# $a1 = X Position to print
 	addi $a1, $a1, 8
 	
 	subi $t0, $s7, OFFSET_SCORES
-	sub $t0, $t0, $t1
-	lw $a0, ($t0)		# $a0 = Value to print
-	
-	add $a0, $a0, $t2
+	lw $a0, ($t0)
+	add $a0, $a0, $t5
 	sw $a0, ($t0)
+	jal PRINT_UPDATE
+	j END_UPDATE
+
+# 2 players jogando, tem que saber qual deve atualizar
+UPDATE_2:
+
+	beq $t6, 1, UPDATE_1
+
+	lw $a1, -4($t0)
+	addi $a1, $a1, 8
 	
+	subi $t0, $s7, OFFSET_SCORES
+	lw $a0, -4($t0)
+	add $a0, $a0, $t5
+	sw $a0, ($t0)
+	jal PRINT_UPDATE
+	j END_UPDATE
+	
+UPDATE_3:
+	beq $t6, 1, UPDATE_1
+	beq $t6, 2, UPDATE_2 
+	
+	lw $a1, -8($t0)
+	addi $a1, $a1, 8
+	
+	subi $t0, $s7, OFFSET_SCORES
+	lw $a0, -8($t0)
+	add $a0, $a0, $t5
+	sw $a0, ($t0) 
+	jal PRINT_UPDATE
+	j END_UPDATE
+	
+UPDATE_4:
+
+	beq $t6, 1, UPDATE_1
+	beq $t6, 2, UPDATE_2
+	beq $t6, 3, UPDATE_3
+	
+	lw $a1,-12($t0)
+	addi $a1, $a1, 8
+	
+	subi $t0, $s7, OFFSET_SCORES
+	lw $a0, -12($t0)
+	add $a0, $a0, $t5
+	sw $a0, ($t0) 
+	jal PRINT_UPDATE
+	j END_UPDATE
+
+PRINT_UPDATE:
 	li $v0, 101
 	li $a2, 200
-	li $a3, 0xFF
+	li $a3, 0xBB
 	syscall
+	jr $ra
 	
+END_UPDATE: 
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
 	jr $ra
