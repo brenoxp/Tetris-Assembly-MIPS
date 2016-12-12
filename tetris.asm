@@ -171,7 +171,7 @@ MAIN:
 
 	jal INIT_MAIN_LOOP
 
-	#jal PRINT_END_SCORE
+	jal PRINT_END_SCORE
 
 	li $v0 10
 	syscall
@@ -1159,8 +1159,6 @@ INIT_MAIN_LOOP:
 	li $a0, 0
 	jal CREATE_PIECE
 
-	#li $a0, 0
-	#jal CAN_ROTATE_CURRENT_PIECE
 
 	MAIN_LOOP:
 
@@ -1170,10 +1168,12 @@ INIT_MAIN_LOOP:
 	jal PLAYER_LOOP
 	addi $s1, $s1, 1
 	bne $s1, $s0,  MAIN_LOOP_PLAYER
+	
 	li $s1, 0
 
-	addi $s2, $s2, 1
-	bne $s2, 100000000, MAIN_LOOP
+	jal PLAYERS_LOSE
+	bne $v0, 0, MAIN_LOOP
+
 
 
 	EXIT_MAIN_LOOP:
@@ -1222,7 +1222,28 @@ INIT_PLAYERS_PIECES:
 #########################################################################################################
 ##                                   END INIT PLAYERS PIECES                                          ##
 #########################################################################################################
+# $v0 = users lose
+PLAYERS_LOSE:
 
+	li $v0, 0
+
+
+	li $t4, 0
+	subi $t3, $s7, OFFSET_NUMBER_OF_PLAYERS
+	lw $t3, ($t3)
+
+
+	subi $t0, $s7, OFFSET_PLAYER_ALIVE
+
+	PLAYERS_LOSE_LOOP:
+	lw $t1, ($t0)
+	add $v0, $v0, $t1
+	subi $t0, $t0, 4
+
+	addi $t4, $t4, 1
+	bne $t4, $t3, PLAYERS_LOSE_LOOP
+
+	jr $ra
 #########################################################################################################
 ##                                     PLAYER LOOP      	                                       ##
 #########################################################################################################
@@ -1270,6 +1291,11 @@ PLAYER_LOOP:
 	lw $t6, ($t7)
 
 	bne $t6, 100, PLAYER_DID_NOT_PRESS_RIGHT
+	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
   	move $a0, $s2
 	jal CAN_RIGHT_CURRENT_PIECE
 	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT
@@ -1278,6 +1304,11 @@ PLAYER_LOOP:
   	PLAYER_DID_NOT_PRESS_RIGHT:
 
   	bne $t6, 97, PLAYER_DID_NOT_PRESS_LEFT
+  	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
   	move $a0, $s2
 	jal CAN_LEFT_CURRENT_PIECE
 	beq $v0, 0, PLAYER_DID_NOT_PRESS_LEFT
@@ -1286,6 +1317,11 @@ PLAYER_LOOP:
   	PLAYER_DID_NOT_PRESS_LEFT:
 
   	bne $t6, 119, PLAYER_DID_NOT_PRESS_UP
+  	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
   	move $a0, $s2
 	jal CAN_ROTATE_CURRENT_PIECE
 	beq $v0, 0, PLAYER_DID_NOT_PRESS_UP
@@ -1424,6 +1460,8 @@ DOWN_LINES:
 
 	move $s0, $a0
 
+
+
 	subi $s0, $s7, OFFSET_MATRICES
 	mul $s1, $a0, 1000
 	sub $s0, $s0, $s1 			# $s0 = init matrix
@@ -1436,6 +1474,15 @@ DOWN_LINES:
 	mul $s2, $s4, 40
 	addi $s2, $s2, 36
 	sub $s0, $s0, $s2 			# $s0 = end of y line
+
+	li $a0,60
+    li $a1,80
+    li $a2,0
+    li $a3,127
+    li $v0,31
+    syscall
+    li $a0,64
+    syscall
 
 	# $a0 = X position
 	# $a1 = Y position
@@ -1594,7 +1641,6 @@ CAN_ROTATE_CURRENT_PIECE:
 	move $s0, $a0
 	jal COPY_CURRENT_PIECE
 
-
 	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
 
 	subi $a0, $t1, 16		# matrix0
@@ -1611,7 +1657,7 @@ CAN_ROTATE_CURRENT_PIECE:
 	ROTATE_NOT_STRAIGHT:
 
 	bne $a0, 1, ROTATE_NOT_SQUARE
-	#jal ROTATE_SQUARE
+	jal ROTATE_SQUARE
 	ROTATE_NOT_SQUARE:
 
 	bne $a0, 2, ROTATE_NOT_T
@@ -1627,11 +1673,11 @@ CAN_ROTATE_CURRENT_PIECE:
 	ROTATE_NOT_L:
 
 	bne $a0, 5, ROTATE_NOT_S
-	#jal ROTATE_S
+	jal ROTATE_S
 	ROTATE_NOT_S:
 
 	bne $a0, 6, ROTATE_NOT_Z
-	#jal ROTATE_Z
+	jal ROTATE_Z
 	ROTATE_NOT_Z:
 
 	# $a0 = player
@@ -1668,6 +1714,36 @@ CLEAR_MATRIX_16:
 #########################################################################################################
 ##                               END CLEAR MATRIX 16 	 		                                       ##
 #########################################################################################################
+
+
+#########################################################################################################
+##                                 ROTATE SQUARE 		                                              ##
+#########################################################################################################
+ROTATE_SQUARE:
+	addi $sp, $sp, -4
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+	subi $a0, $t1, 16		# matrix
+ 	subi $a1, $t1, 8	 	#type address
+
+	subi $t0, $t1, 12
+	lw $t2, ($t0)
+
+	jal CREATE_SQUARE_POLYMONIO_0
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                END ROTATE STRAIGHT 		                                           ##
+#########################################################################################################
+
 
 #########################################################################################################
 ##                                 ROTATE STRAIGHT 		                                              ##
@@ -1773,6 +1849,68 @@ ROTATE_T:
 
 
 #########################################################################################################
+##                                 ROTATE J 		                                              ##
+#########################################################################################################
+ROTATE_J:
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+# 0 -> 3
+
+	addi $sp, $sp, -4
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+	subi $a0, $t1, 16		# matrix
+ 	subi $a1, $t1, 8	 	#type address
+
+	subi $t0, $t1, 12
+	lw $t2, ($t0)
+
+	ROTATE_J_R4:
+	bne $t2, 0, ROTATE_J_R1
+	li $t2, 1
+	sw $t2, ($t0)
+	jal CREATE_J_POLYMONIO_3
+ 	j ROTATE_J_EXIT
+
+ 	ROTATE_J_R1:
+ 	bne $t2, 1, ROTATE_J_R2
+	li $t2, 2
+	sw $t2, ($t0)
+	jal CREATE_J_POLYMONIO_2
+ 	j ROTATE_J_EXIT
+
+
+ 	ROTATE_J_R2:
+ 	bne $t2, 2, ROTATE_J_R3
+	li $t2, 3
+	sw $t2, ($t0)
+	jal CREATE_J_POLYMONIO_1
+ 	j ROTATE_J_EXIT
+
+ 	ROTATE_J_R3:
+ 	bne $t2, 3, ROTATE_J_R4
+	li $t2, 0
+	sw $t2, ($t0)
+	jal CREATE_J_POLYMONIO_0
+ 	j ROTATE_J_EXIT
+
+	ROTATE_J_EXIT:
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                END ROTATE T 		                                           ##
+#########################################################################################################
+
+
+#########################################################################################################
 ##                                 ROTATE L 		                                              ##
 #########################################################################################################
 ROTATE_L:
@@ -1833,12 +1971,10 @@ ROTATE_L:
 ##                                END ROTATE T 		                                           ##
 #########################################################################################################
 
-
-
 #########################################################################################################
-##                                 ROTATE J		                                              ##
+##                                 ROTATE S 		                                              ##
 #########################################################################################################
-ROTATE_J:
+ROTATE_S:
 # $a0 = Start matrix memory position
 # $a1 = Type adress
 # 0 -> 3
@@ -1855,36 +1991,36 @@ ROTATE_J:
 	subi $t0, $t1, 12
 	lw $t2, ($t0)
 
-	ROTATE_J_R4:
-	bne $t2, 0, ROTATE_J_R1
+	ROTATE_S_R4:
+	bne $t2, 0, ROTATE_S_R1
 	li $t2, 1
 	sw $t2, ($t0)
-	jal CREATE_J_POLYMONIO_3
- 	j ROTATE_T_EXIT
+	jal CREATE_S_POLYMONIO_3
+ 	j ROTATE_S_EXIT
  	
- 	ROTATE_J_R1:
- 	bne $t2, 1, ROTATE_J_R2
+ 	ROTATE_S_R1:
+ 	bne $t2, 1, ROTATE_S_R2
 	li $t2, 2
 	sw $t2, ($t0)
-	jal CREATE_J_POLYMONIO_2
- 	j ROTATE_J_EXIT
+	jal CREATE_S_POLYMONIO_2
+ 	j ROTATE_S_EXIT
 
 
- 	ROTATE_J_R2:
- 	bne $t2, 2, ROTATE_J_R3
+ 	ROTATE_S_R2:
+ 	bne $t2, 2, ROTATE_S_R3
 	li $t2, 3
 	sw $t2, ($t0)
-	jal CREATE_J_POLYMONIO_1
- 	j ROTATE_J_EXIT
+	jal CREATE_S_POLYMONIO_1
+ 	j ROTATE_S_EXIT
 
- 	ROTATE_J_R3:
- 	bne $t2, 3, ROTATE_J_R4
+ 	ROTATE_S_R3:
+ 	bne $t2, 3, ROTATE_S_R4
 	li $t2, 0
 	sw $t2, ($t0)
-	jal CREATE_J_POLYMONIO_0
- 	j ROTATE_J_EXIT
+	jal CREATE_S_POLYMONIO_0
+ 	j ROTATE_S_EXIT
 
-	ROTATE_J_EXIT:
+	ROTATE_S_EXIT:
 
 
 	lw   $s0, 0($sp)
@@ -1893,14 +2029,70 @@ ROTATE_J:
 	addi $sp, $sp, 4
 	jr $ra
 #########################################################################################################
-##                                END ROTATE T 		                                           ##
+##                                END ROTATE S 		                                           ##
 #########################################################################################################
 
+#########################################################################################################
+##                                 ROTATE Z 		                                              ##
+#########################################################################################################
+ROTATE_Z:
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+# 0 -> 3
 
+	addi $sp, $sp, -4
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4
+	sw   $s0, 0($sp)
+
+	subi $t1, $s7, OFFSET_INFO_AUX_PIECE
+	subi $a0, $t1, 16		# matrix
+ 	subi $a1, $t1, 8	 	#type address
+
+	subi $t0, $t1, 12
+	lw $t2, ($t0)
+
+	ROTATE_Z_R4:
+	bne $t2, 0, ROTATE_Z_R1
+	li $t2, 1
+	sw $t2, ($t0)
+	jal CREATE_Z_POLYMONIO_3
+ 	j ROTATE_Z_EXIT
+ 	
+ 	ROTATE_Z_R1:
+ 	bne $t2, 1, ROTATE_Z_R2
+	li $t2, 2
+	sw $t2, ($t0)
+	jal CREATE_Z_POLYMONIO_2
+ 	j ROTATE_Z_EXIT
+
+
+ 	ROTATE_Z_R2:
+ 	bne $t2, 2, ROTATE_Z_R3
+	li $t2, 3
+	sw $t2, ($t0)
+	jal CREATE_Z_POLYMONIO_1
+ 	j ROTATE_Z_EXIT
+
+ 	ROTATE_Z_R3:
+ 	bne $t2, 3, ROTATE_Z_R4
+	li $t2, 0
+	sw $t2, ($t0)
+	jal CREATE_Z_POLYMONIO_0
+ 	j ROTATE_Z_EXIT
+
+	ROTATE_Z_EXIT:
+
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
 	jr $ra
-##############
-## Rotate J ##
-##############
+#########################################################################################################
+##                                END ROTATE Z 		                                           ##
+#########################################################################################################
+
 
 #########################################################################################################
 ##                                 CAN DOWN CURRENT PIECE                                              ##
@@ -2305,7 +2497,7 @@ CREATE_PIECE:
 
 
 	jal RANDOM
-	#li $v0, 2
+	#li $v0, 6
 
 	bne $v0, 0, NOT_CREATE_PIECE_0
 	jal CREATE_STRAIGHT_POLYMONIO_0
@@ -2860,11 +3052,11 @@ CREATE_S_POLYMONIO_3:
 
 	subi $t0, $t0, 20
 	sw $t3, ($t0)
-	subi $t0, $t0, 20
+	subi $t0, $t0, 16
 	sw $t3, ($t0)
 	subi $t0, $t0, 4
 	sw $t3, ($t0)
-	subi $t0, $t0, 12
+	subi $t0, $t0, 16
 	sw $t3, ($t0)
 
 	jr $ra
@@ -2966,13 +3158,13 @@ CREATE_Z_POLYMONIO_3:
 
 	li $t3, 0xCA	# piece color
 
-	subi $t0, $t0, 20
+	subi $t0, $t0, 24
 	sw $t3, ($t0)
-	subi $t0, $t0, 20
+	subi $t0, $t0, 16
 	sw $t3, ($t0)
 	subi $t0, $t0, 4
 	sw $t3, ($t0)
-	subi $t0, $t0, 20
+	subi $t0, $t0, 16
 	sw $t3, ($t0)
 
 	jr $ra
