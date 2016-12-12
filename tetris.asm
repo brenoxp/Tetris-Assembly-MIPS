@@ -1050,6 +1050,8 @@ INIT_MAIN_LOOP:
 	
 	#li $a0, 0
 	#jal CAN_ROTATE_CURRENT_PIECE
+
+
 	
 	MAIN_LOOP:
 	
@@ -1156,6 +1158,9 @@ PLAYER_LOOP:
 	jal SOLID_PIECE
 
 	move $a0, $s2
+	jal UPDATE_IF_COMPLETED_LINE
+
+	move $a0, $s2
 	jal CREATE_PIECE
 	DID_DOWN_CURRENT_PIECE:
 	
@@ -1179,6 +1184,64 @@ PLAYER_LOOP:
 #########################################################################################################
 ##                                   END  PLAYER LOOP      	                                       ##
 #########################################################################################################
+
+
+#########################################################################################################
+##                                     COMPLETED LINE      	                                       ##
+#########################################################################################################
+# $a0 = player
+# $v0 = line completed
+UPDATE_IF_COMPLETED_LINE:
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+	
+
+	subi $t0, $s7, OFFSET_MATRICES
+	mul $t1, $a0, 1000
+	sub $t0, $t0, $t1 			# $t0 = init matrix
+
+	subi $t0, $t0, 160
+	subi $t2, $t0, 40			# $t2 = next line
+	
+	li $t3, 0 					# $t3 = count x
+	li $t4, 0					# $t4 = count y
+
+	UPDATE_IF_COMPLETED_LINE_LOOP:
+	lw $t5, ($t0)
+	subi $t0, $t0, 4
+
+	beq $t5, 0x00, UPDATE_IF_COMPLETED_LINE_NEXT_LINE
+
+	addi $t3, $t3, 1
+	bne $t3, 10, UPDATE_IF_COMPLETED_LINE_LOOP
+	j COMPLETED_LINE
+
+	UPDATE_IF_COMPLETED_LINE_NEXT_LINE:
+	addi $t4, $t4, 1			# y++
+	move $t0, $t2 				# init matrix = next line
+	subi $t2, $t2, 40			# update next line
+	bne $t4, 20, UPDATE_IF_COMPLETED_LINE_LOOP
+
+
+	j UPDATE_IF_COMPLETED_LINE_EXIT
+	COMPLETED_LINE:
+	move $a0, $t4
+	li $v0, 1
+	syscall
+
+	UPDATE_IF_COMPLETED_LINE_EXIT:
+
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                     END COMPLETED LINE      	                           		  ##
+#########################################################################################################
+
 
 #########################################################################################################
 ##                                     SOLID PIECE       	                                       ##
@@ -1321,8 +1384,6 @@ ROTATE_J:
 ##############
 ## Rotate J ##
 ##############
-
-
 
 #########################################################################################################
 ##                                 CAN DOWN CURRENT PIECE                                              ##
@@ -1722,8 +1783,8 @@ CREATE_PIECE:
 	# create line test
 	move $a0, $t0
 	
-	jal RANDOM
-	#li $v0, 1
+	#jal RANDOM
+	li $v0, 1
 
 	bne $v0, 0, NOT_CREATE_PIECE_0
 	jal CREATE_STRAIGHT_POLYMONIO_1
