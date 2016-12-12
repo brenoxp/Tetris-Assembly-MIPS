@@ -20,6 +20,7 @@
 .eqv OFFSET_INFO_PIECE 			5136		# 5136 - 5456 ({X, Y, Type, Rotation, [4X4]}) * 4 PLAYERS
 .eqv OFFSET_INFO_AUX_PIECE 		5456		# 5456 - 5536 ({X, Y, Type, Rotation, [4X4]})
 .eqv OFFSET_OF_NEW_SP         	5536
+.eqv ADR_MUSIC 			0xFFFF0210
 
 
 # Info piece type
@@ -58,9 +59,20 @@
 	NL:            .asciiz "\n"
 	SPACE:         .asciiz " "
 	
+	NOTA1:	.word 0x10F0403F
+	NOTA2:  .word 0x10F0443F
+	NOTA3:  .word 0x10F0483F
+	NOTA4:  .word 0x10F0453F
+	
+
+	
 .text
 # ------  IN�?CIO DA MAIN ------
 MAIN:
+	li $t0, ADR_MUSIC
+	la $t1, NOTA1
+	sw $t1, 0($t0)
+
 	# Save $sp value into $s7
 	move $s7, $sp
 	
