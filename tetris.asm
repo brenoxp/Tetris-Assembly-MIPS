@@ -140,12 +140,12 @@ MAIN:
 	subi $t0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	li $t1, 1
 	sw $t1, ($t0)
-	
+
 	# Configura os controles escolhidos se for IrDA
 	li $s1, 0
 	li $s2, 1 # indica que esta acontecendo antes da escolha dos jogadores
 	#jal CONTROL_CONFIG
-	
+
 	# Inicializa a tela
 	la $t0, VGA
 	li $t1, TAMX
@@ -162,7 +162,7 @@ MAIN:
 	li $a0, 0x00
 	li $v0, 48
 	syscall
-	
+
 	# Configura os controles escolhidos se for IrDA
 	li $s1, 0
 	li $s2, 0 # indica que esta acontecendo depois da escolha dos jogadores
@@ -459,7 +459,7 @@ PRESS_MENU_NOTHING:
 ##                                       CONTROL CONFIG                                                ##
 #########################################################################################################
 # Configures the IrDA keys based on the number of players
-CONTROL_CONFIG: 
+CONTROL_CONFIG:
 	beq $s2, 1, OUT_CONTROL
 
 	# savers $ra
@@ -542,7 +542,7 @@ CONTROL_CONFIG:
 	syscall
 	jal GET_KEY
 	subi $s5, $s5, -4
-	
+
 	beq $s0, $t3, END_CONFIG_KEYS
 	addi $t3, $t3, 1
 	j LOOP_CONTROL
@@ -550,20 +550,20 @@ CONTROL_CONFIG:
 	# Get key = 0 - Teclado
 	# Get key = 1 - IrDA
 	GET_KEY:
- 
+
 	move $t7, $zero
 	beq $s1, $t7, TECLADO_GET_KEY
 	addi $t7, $t7, 1
 	beq $s1, $t7, IRDA_GET_KEY
-	
+
 	# Read character and saves ASCII code
 	TECLADO_GET_KEY:
 	li $v0, 12
 	syscall
 
 	# saves value
-	sw $v0, ($s5) 
-OUT_CONTROL: 
+	sw $v0, ($s5)
+OUT_CONTROL:
 	jr $ra
 
 # Keeps IrDA on loop until it reads something from the receiver addres
@@ -580,11 +580,11 @@ IRDA_GET_KEY:
 	jr $ra
 
 END_CONFIG_KEYS:
-	# Limpa a tela 
+	# Limpa a tela
 	li $v0, 48
 	li $a0, 0x0000
 	syscall
-	lw   $ra, 0($sp) 
+	lw   $ra, 0($sp)
 
 	addi $sp, $sp, 4
 	jr $ra
@@ -869,7 +869,7 @@ PRINT_BOARDS:
 	li $s1, 0
 
 	LOOP_PRINT_BOARDS:
-	
+
 	move $a3, $s1
 	jal PRINT_BOARD
 
@@ -971,29 +971,29 @@ INIT_SCORE:
 	sw $t0, ($t1)
 	subi $t1, $t1, -4
 	sw $t0, ($t1)
-	
+
 	subi $t7, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t7, ($t7)
-	
+
 	li $a0, 1
 	li $a1, 0
 	jal UPDATE_SCORE
 	beq $t7, 1, END_INIT
-	
+
 	li $a0, 2
 	li $a1, 0
 	jal UPDATE_SCORE
 	beq $t7, 2, END_INIT
-	
+
 	li $a0, 3
 	li $a1, 0
 	jal UPDATE_SCORE
 	beq $t7, 3, END_INIT
-	
+
 	li $a0, 4
 	li $a1, 0
 	jal UPDATE_SCORE
-	
+
 END_INIT:
 
 	lw   $ra, 0($sp)
@@ -1012,13 +1012,13 @@ END_INIT:
 UPDATE_SCORE:
 	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-  
+
 	move $t5, $a1
 	move $t6, $a0
 	subi $t0, $s7, OFFSET_BOARD_POSITIONS
 	subi $t7, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $t7, ($t7)
-	
+
 	beq $t7, 1, UPDATE_1
 	beq $t7, 2, UPDATE_2
 	beq $t7, 3, UPDATE_3
@@ -1044,41 +1044,41 @@ UPDATE_2:
 
 	lw $a1, -4($t0)
 	addi $a1, $a1, 8
-	
+
 	subi $t0, $s7, OFFSET_SCORES
 	lw $a0, -4($t0)
 	add $a0, $a0, $t5
 	sw $a0, ($t0)
 	jal PRINT_UPDATE
 	j END_UPDATE
-	
+
 UPDATE_3:
 	beq $t6, 1, UPDATE_1
-	beq $t6, 2, UPDATE_2 
-	
+	beq $t6, 2, UPDATE_2
+
 	lw $a1, -8($t0)
 	addi $a1, $a1, 8
-	
+
 	subi $t0, $s7, OFFSET_SCORES
 	lw $a0, -8($t0)
 	add $a0, $a0, $t5
-	sw $a0, ($t0) 
+	sw $a0, ($t0)
 	jal PRINT_UPDATE
 	j END_UPDATE
-	
+
 UPDATE_4:
 
 	beq $t6, 1, UPDATE_1
 	beq $t6, 2, UPDATE_2
 	beq $t6, 3, UPDATE_3
-	
+
 	lw $a1,-12($t0)
 	addi $a1, $a1, 8
-	
+
 	subi $t0, $s7, OFFSET_SCORES
 	lw $a0, -12($t0)
 	add $a0, $a0, $t5
-	sw $a0, ($t0) 
+	sw $a0, ($t0)
 	jal PRINT_UPDATE
 	j END_UPDATE
 
@@ -1089,8 +1089,8 @@ PRINT_UPDATE:
 	li $a3, 0xBB
 	syscall
 	jr $ra
-	
-END_UPDATE: 
+
+END_UPDATE:
 
 	lw   $ra, 0($sp)
 	addi $sp, $sp, 4
@@ -1292,16 +1292,16 @@ PLAYER_LOOP:
 # $a0 = player
 # $v0 = (line_completed) ? line : -1
 UPDATE_IF_COMPLETED_LINE:
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
 
 	mul $t0, $a0, 1000
 	addi $t0, $t0, 160
 
 	subi $t1, $s7, OFFSET_MATRICES
-	sub $t1, $t1, $t0 
+	sub $t1, $t1, $t0
 
 	li $t2, 0 			# current x
 	li $t3, 0			# current y
@@ -1327,7 +1327,7 @@ UPDATE_IF_COMPLETED_LINE:
 
 	li $s0, -1
 	j UPDATE_IF_COMPLETED_LINE_EXIT
-	
+
 	FIND_LINE:
 	move $s0, $t3
 	move $a1, $s0
@@ -1350,20 +1350,20 @@ UPDATE_IF_COMPLETED_LINE:
 #########################################################################################################
 # $a0 = player
 # $a1 = line
-DOWN_LINES: 
-	addi $sp, $sp, -4 
+DOWN_LINES:
+	addi $sp, $sp, -4
 	sw   $ra, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s0, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s1, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s2, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s3, 0($sp)
-	addi $sp, $sp, -4 
+	addi $sp, $sp, -4
 	sw   $s4, 0($sp)
-	
+
 	move $s0, $a0
 
 	subi $s0, $s7, OFFSET_MATRICES
@@ -1371,7 +1371,7 @@ DOWN_LINES:
 	sub $s0, $s0, $s1 			# $s0 = init matrix
 
 	subi $s0, $s0, 160
-	
+
 	li $s3, 9 					# $s3 = count x
 	move $s4, $a1				# $t4 = count y
 
@@ -1411,7 +1411,7 @@ DOWN_LINES:
 	li $a1, 1
 	jal UPDATE_SCORE
 
-	
+
 	lw   $s4, 0($sp)
 	addi $sp, $sp, 4
 	lw   $s3, 0($sp)
@@ -1659,7 +1659,7 @@ ROTATE_T:
 	sw $t2, ($t0)
 	jal CREATE_T_POLYMONIO_0
  	j ROTATE_T_EXIT
- 	
+
  	ROTATE_T_R1:
  	bne $t2, 1, ROTATE_T_R2
 	li $t2, 2
@@ -2109,8 +2109,8 @@ CREATE_PIECE:
 	# create line test
 	move $a0, $t0
 
-	#jal RANDOM
-	li $v0, 2
+	jal RANDOM
+	#li $v0, 2
 
 	bne $v0, 0, NOT_CREATE_PIECE_0
 	jal CREATE_STRAIGHT_POLYMONIO_0
@@ -2651,6 +2651,33 @@ CREATE_S_POLYMONIO_2:
 #########################################################################################################
 
 #########################################################################################################
+##                                     CREATE S POLYOMINO	           3                            ##
+#########################################################################################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_S_POLYMONIO_3:
+	move $t0, $a0
+
+	li $t1, 5
+	sw $t1, ($a1)
+
+	li $t3, 0xB0	# piece color
+
+	subi $t0, $t0, 20
+	sw $t3, ($t0)
+	subi $t0, $t0, 20
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 12
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################################################################################
+##                                   END CREATE S POLYOMINO	   3                                    ##
+#########################################################################################################
+
+#########################################################################################################
 ##                                     CREATE Z POLYOMINO	                                       ##
 #########################################################################################################
 # $a0 = Start matrix memory position
@@ -2730,6 +2757,34 @@ CREATE_Z_POLYMONIO_2:
 #########################################################################################################
 ##                                     END CREATE Z POLYOMINO	     2                                  ##
 #########################################################################################################
+
+#########################################################################################################
+##                                     CREATE Z POLYOMINO	   3                                    ##
+#########################################################################################################
+# $a0 = Start matrix memory position
+# $a1 = Type adress
+CREATE_Z_POLYMONIO_3:
+	move $t0, $a0
+
+	li $t1, 6
+	sw $t1, ($a1)
+
+	li $t3, 0xCA	# piece color
+
+	subi $t0, $t0, 20
+	sw $t3, ($t0)
+	subi $t0, $t0, 20
+	sw $t3, ($t0)
+	subi $t0, $t0, 4
+	sw $t3, ($t0)
+	subi $t0, $t0, 20
+	sw $t3, ($t0)
+
+	jr $ra
+#########################################################################################################
+##                                     END CREATE Z POLYOMINO	     1                                  ##
+#########################################################################################################
+
 
 #########################################################################################################
 ##                                     PRINT CURRENT PIECE	                                       ##
