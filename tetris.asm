@@ -1290,44 +1290,170 @@ PLAYER_LOOP:
 	nop
 	lw $t6, ($t7)
 
-	bne $t6, 100, PLAYER_DID_NOT_PRESS_RIGHT
+	bne $t6, 100, PLAYER_DID_NOT_PRESS_RIGHT0
 	li $a0,36
     li $a1,80
     li $a3,127
     li $v0,31
     syscall
-  	move $a0, $s2
+  	li $a0, 0
 	jal CAN_RIGHT_CURRENT_PIECE
-	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT
-	move $a0, $s2
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT0
+	li $a0, 0
 	jal COPY_AUX_PIECE_AND_PRINT
-  	PLAYER_DID_NOT_PRESS_RIGHT:
+  	PLAYER_DID_NOT_PRESS_RIGHT0:
 
-  	bne $t6, 97, PLAYER_DID_NOT_PRESS_LEFT
+  	bne $t6, 97, PLAYER_DID_NOT_PRESS_LEFT0
   	li $a0,36
     li $a1,80
     li $a3,127
     li $v0,31
     syscall
-  	move $a0, $s2
+  	li $a0, 0
 	jal CAN_LEFT_CURRENT_PIECE
-	beq $v0, 0, PLAYER_DID_NOT_PRESS_LEFT
-	move $a0, $s2
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_LEFT0
+	li $a0, 0
 	jal COPY_AUX_PIECE_AND_PRINT
-  	PLAYER_DID_NOT_PRESS_LEFT:
+  	PLAYER_DID_NOT_PRESS_LEFT0:
 
-  	bne $t6, 119, PLAYER_DID_NOT_PRESS_UP
+  	bne $t6, 119, PLAYER_DID_NOT_PRESS_UP0
   	li $a0,36
     li $a1,80
     li $a3,127
     li $v0,31
     syscall
-  	move $a0, $s2
+  	li $a0, 0
 	jal CAN_ROTATE_CURRENT_PIECE
-	beq $v0, 0, PLAYER_DID_NOT_PRESS_UP
-	move $a0, $s2
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_UP0
+	li $a0, 0
 	jal COPY_AUX_PIECE_AND_PRINT
-  	PLAYER_DID_NOT_PRESS_UP:
+  	PLAYER_DID_NOT_PRESS_UP0:
+
+
+
+  	# player 1
+  	bne $t6, 104, PLAYER_DID_NOT_PRESS_RIGHT1
+	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 1
+	jal CAN_RIGHT_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT1
+	li $a0, 1
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_RIGHT1:
+
+  	bne $t6, 102, PLAYER_DID_NOT_PRESS_LEFT1
+  	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 1
+	jal CAN_LEFT_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_LEFT1
+	li $a0, 1
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_LEFT1:
+
+  	bne $t6, 116, PLAYER_DID_NOT_PRESS_UP1
+  	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 1
+	jal CAN_ROTATE_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_UP1
+	li $a0, 1
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_UP1:
+
+
+  	# player 2
+  	bne $t6, 108, PLAYER_DID_NOT_PRESS_RIGHT2
+	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 2
+	jal CAN_RIGHT_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT2
+	li $a0, 2
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_RIGHT2:
+
+  	bne $t6, 106, PLAYER_DID_NOT_PRESS_LEFT2
+  	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 2
+	jal CAN_LEFT_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_LEFT2
+	li $a0, 2
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_LEFT2:
+
+  	bne $t6, 105, PLAYER_DID_NOT_PRESS_UP2
+  	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 2
+	jal CAN_ROTATE_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_UP2
+	li $a0, 2
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_UP2:
+
+
+
+  	# player 3
+  	bne $t6, 110, PLAYER_DID_NOT_PRESS_RIGHT3
+	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 3
+	jal CAN_RIGHT_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_RIGHT3
+	li $a0, 3
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_RIGHT3:
+
+  	bne $t6, 118, PLAYER_DID_NOT_PRESS_LEFT3
+  	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 3
+	jal CAN_LEFT_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_LEFT3
+	li $a0, 3
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_LEFT3:
+
+  	bne $t6, 103, PLAYER_DID_NOT_PRESS_UP3
+  	li $a0,36
+    li $a1,80
+    li $a3,127
+    li $v0,31
+    syscall
+  	li $a0, 3
+	jal CAN_ROTATE_CURRENT_PIECE
+	beq $v0, 0, PLAYER_DID_NOT_PRESS_UP3
+	li $a0, 3
+	jal COPY_AUX_PIECE_AND_PRINT
+  	PLAYER_DID_NOT_PRESS_UP3:
+
 
   	li $t6, 0
   	sw $t6, ($t7)
