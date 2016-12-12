@@ -144,7 +144,7 @@ MAIN:
 	# Configura os controles escolhidos se for IrDA
 	li $s1, 0
 	li $s2, 1 # indica que esta acontecendo antes da escolha dos jogadores
-	jal CONTROL_CONFIG
+	#jal CONTROL_CONFIG
 	
 	# Inicializa a tela
 	la $t0, VGA
@@ -166,7 +166,7 @@ MAIN:
 	# Configura os controles escolhidos se for IrDA
 	li $s1, 0
 	li $s2, 0 # indica que esta acontecendo depois da escolha dos jogadores
-	jal CONTROL_CONFIG
+	#jal CONTROL_CONFIG
 
 	jal INIT_MAIN_LOOP
 
@@ -863,14 +863,23 @@ PRINT_BOARDS:
 	addi $sp, $sp, -4
 	sw   $s1, 0($sp)
 
-	li $s5, 0
-	LOOP_PRINT_BOARDS:
+
 	subi $s0, $s7, OFFSET_NUMBER_OF_PLAYERS
 	lw $s0, ($s0)
+	li $s1, 0
+
+	LOOP_PRINT_BOARDS:
+	
 	move $a3, $s1
 	jal PRINT_BOARD
+
 	addi $s1, $s1, 1
 	bne $s1, $s0, LOOP_PRINT_BOARDS
+
+
+
+
+
 
 	lw   $s1, 0($sp)
 	addi $sp, $sp, 4
@@ -1215,12 +1224,8 @@ PLAYER_LOOP:
 	jal COPY_AUX_PIECE_AND_PRINT
   	PLAYER_DID_NOT_PRESS_LEFT:
 
-
-
-
   	li $t6, 0
   	sw $t6, ($t7)
-
 
 	bne $s1, $t3, PLAYER_DO_NOTHING
 	# down trigger
@@ -1237,8 +1242,15 @@ PLAYER_LOOP:
 	move $a0, $s2
 	jal SOLID_PIECE
 
+	REPEAT_COMPLETE_LINE:
 	move $a0, $s2
 	jal UPDATE_IF_COMPLETED_LINE
+	move $t9, $v0
+	move $a0 $v0
+	li $v0, 1
+	syscall
+	move $v0, $t9
+	bne $v0, -1, REPEAT_COMPLETE_LINE
 
 	move $a0, $s2
 	jal CREATE_PIECE
@@ -1270,48 +1282,51 @@ PLAYER_LOOP:
 ##                                     COMPLETED LINE      	                                       ##
 #########################################################################################################
 # $a0 = player
-# $v0 = line completed
+# $v0 = (line_completed) ? line : -1
 UPDATE_IF_COMPLETED_LINE:
 	addi $sp, $sp, -4 
 	sw   $ra, 0($sp)
 	addi $sp, $sp, -4 
 	sw   $s0, 0($sp)
-	
 
-	subi $t0, $s7, OFFSET_MATRICES
-	mul $t1, $a0, 1000
-	sub $t0, $t0, $t1 			# $t0 = init matrix
+	mul $t0, $a0, 1000
+	addi $t0, $t0, 160
 
-	subi $t0, $t0, 160
-	subi $t2, $t0, 40			# $t2 = next line
-	
-	li $t3, 0 					# $t3 = count x
-	li $t4, 0					# $t4 = count y
+	subi $t1, $s7, OFFSET_MATRICES
+	sub $t1, $t1, $t0 
 
-	UPDATE_IF_COMPLETED_LINE_LOOP:
-	lw $t5, ($t0)
-	subi $t0, $t0, 4
+	li $t2, 0 			# current x
+	li $t3, 0			# current y
 
-	beq $t5, 0x00, UPDATE_IF_COMPLETED_LINE_NEXT_LINE
+	li $t4, 1 			# flag
 
+	UPDATE_COMPLETED_LINE_LOOP:
+	lw $t5, ($t1)
+	subi $t1, $t1, 4
+
+	bne $t5, 0x00, CONTINUE_FLAG
+	li $t4, 0
+	CONTINUE_FLAG:
+
+	addi $t2, $t2, 1
+	bne $t2, 10, UPDATE_COMPLETED_LINE_LOOP
+
+	beq $t4, 1 FIND_LINE
+	li $t4, 1
+	li $t2, 0
 	addi $t3, $t3, 1
-	bne $t3, 10, UPDATE_IF_COMPLETED_LINE_LOOP
-	j COMPLETED_LINE
+	bne $t3, 20, UPDATE_COMPLETED_LINE_LOOP
 
-	UPDATE_IF_COMPLETED_LINE_NEXT_LINE:
-	addi $t4, $t4, 1			# y++
-	move $t0, $t2 				# init matrix = next line
-	subi $t2, $t2, 40			# update next line
-	bne $t4, 20, UPDATE_IF_COMPLETED_LINE_LOOP
-
-
+	li $s0, -1
 	j UPDATE_IF_COMPLETED_LINE_EXIT
-	COMPLETED_LINE:
-	move $a0, $t4
-	li $v0, 1
-	syscall
+	
+	FIND_LINE:
+	move $s0, $t3
+	move $a1, $s0
+	jal DOWN_LINES
 
 	UPDATE_IF_COMPLETED_LINE_EXIT:
+	move $v0, $s0
 
 	lw   $s0, 0($sp)
 	addi $sp, $sp, 4
@@ -1320,6 +1335,84 @@ UPDATE_IF_COMPLETED_LINE:
 	jr $ra
 #########################################################################################################
 ##                                     END COMPLETED LINE      	                           		  ##
+#########################################################################################################
+
+#########################################################################################################
+##                                     DOWN DOWN_LINES 	     	                           		  ##
+#########################################################################################################
+# $a0 = player
+# $a1 = line
+DOWN_LINES: 
+	addi $sp, $sp, -4 
+	sw   $ra, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s0, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s1, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s2, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s3, 0($sp)
+	addi $sp, $sp, -4 
+	sw   $s4, 0($sp)
+	
+	move $s0, $a0
+
+	subi $s0, $s7, OFFSET_MATRICES
+	mul $s1, $a0, 1000
+	sub $s0, $s0, $s1 			# $s0 = init matrix
+
+	subi $s0, $s0, 160
+	
+	li $s3, 9 					# $s3 = count x
+	move $s4, $a1				# $t4 = count y
+
+	mul $s2, $s4, 40
+	addi $s2, $s2, 36
+	sub $s0, $s0, $s2 			# $s0 = end of y line
+
+	# $a0 = X position
+	# $a1 = Y position
+	# $a2 = color
+	# $a3 = Player {0, 1, 2, 3}
+	# PRINT_SQUARE
+
+	DOWN_LINES_LOOP:
+	addi $s2, $s0, 40
+	lw $s2, ($s2)
+	sw $s2, ($s0)	 			# puts color in $s0
+
+	move $a0, $s3
+	move $a1, $s4
+	move $a2, $s2
+	move $a3, $s0
+	jal PRINT_SQUARE
+
+	addi $s0, $s0, 4
+
+	subi $s3, $s3, 1
+	bge $s3, 0, DOWN_LINES_NOT_UPDATE_Y
+	subi $s4, $s4, 1
+	li $s3, 9
+
+	DOWN_LINES_NOT_UPDATE_Y:
+	bgt $s4, 0, DOWN_LINES_LOOP
+	
+	lw   $s4, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s3, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s2, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s1, 0($sp)
+	addi $sp, $sp, 4
+	lw   $s0, 0($sp)
+	addi $sp, $sp, 4
+	lw   $ra, 0($sp)
+	addi $sp, $sp, 4
+	jr $ra
+#########################################################################################################
+##                                     END DOWN DOWN_LINES 	     	                           		  ##
 #########################################################################################################
 
 
@@ -1863,8 +1956,8 @@ CREATE_PIECE:
 	# create line test
 	move $a0, $t0
 
-	jal RANDOM
-	#li $v0, 6
+	#jal RANDOM
+	li $v0, 1
 
 	bne $v0, 0, NOT_CREATE_PIECE_0
 	jal CREATE_STRAIGHT_POLYMONIO_1
